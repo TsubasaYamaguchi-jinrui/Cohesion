@@ -157,35 +157,43 @@ knitr::include_graphics("figure/p_aggcomp.png")
 <br/>  
 
 ### 怪我の頻度  
-それでは、実際にオスの攻撃が多い交尾期に怪我が多くなるかを調べる。  
+それでは、実際にオスの攻撃が多い交尾期に怪我が多くなるかを調べる。先ほど同様に、交尾期のデータは<u>対象個体が発情しているときとしていないときで分ける</u>。    
 
+#### データの読み込みと加工  
+
+各メスがそれぞれの観察日に群れで最初に確認されてから、群れの観察を終了するまでの時間の長さを算出する。分析には**少なくとも300分以上**確認出来た個体のデータのみを用いる。  
+
+まずは、メスが確認された時刻のデータを読み込む。  
 ```{r}
 female_time <- read_csv("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/combined_data/female_pre_all.csv") %>% 
   mutate(date = as_date(date))
-
-att <- read_csv("data/attributes.csv")
 ```
 
+確認できた時間の長さを算出する。  
 ```{r}
 base_18b %>% 
   bind_rows(base_19_nm, base_19b, base_20_nm, base_20b, base_21_nm, base_21b, base_22_nm) -> base_all
-
-male_pre18 %>% 
-  bind_rows(male_pre19_nm, male_pre19, male_pre20_nm, male_pre20, male_pre21_nm, male_pre21, male_pre22_nm) %>% 
-  select(date,TY)-> TY_presence
 
 female_time %>% 
   pivot_longer(cols = Kur:Har,
                names_to = "femaleID",
                values_to = "presence") %>% 
-  left_join(base_all %>% select(date, duration,  study_period),
+  left_join(base_all %>% select(date, start, fin, suspend, restart),
             by = "date") %>% 
-  mutate(date = as_date(date)) %>% 
-  left_join(att, by = c("study_period","femaleID")) %>% 
-  left_join(TY_presence, by = "date")-> female_time_long
+  ## 死亡個体と確認時間不明個体、非対称個体(6歳未満)は除く
+  filter(presence != "?" & presence != "DD" & presence != "NS" & presence != "NA") %>% 
+  mutate(date = as_date(date)) %>%
+  mutate(presence = str_c(date," ", presence)) %>% 
+  mutate(presence = as_datetime(presence)) %>% 
+  mutate(suspend_time = as.numeric(restart - suspend)) %>% 
+  mutate(dur = ifelse(is.na(suspend), as.numeric(fin - presence),
+                      ifelse(!is.na(suspend) & presence <= suspend, as.numeric(fin - presence) - suspend_time,
+                             ifelse(!is.na(suspend) & presence >= restart, as.numeric(fin - presence), "NA")))) %>% 
+  mutate(dur = as.numeric(dur)) %>% 
+  mutate(season = ifelse(month(date)>=9 & month(date) <= 12, "m", "nm")) %>% 
+  mutate(study_period = str_c(season,str_sub(year(date),3,4))) %>% 
+  dplyr::select(date, femaleID, study_period, dur) -> female_dur
 ```
-
-
 
 ```{r}
 
