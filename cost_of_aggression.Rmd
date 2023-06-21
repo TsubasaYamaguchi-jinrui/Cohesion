@@ -1,0 +1,195 @@
+# オスの攻撃はメスのコストになっているのか  
+本章では、オスからの攻撃がメスの怪我の有無と関連しているかを調べることで、オスの攻撃がメスのコストになっているかを検討する。  
+
+## 交尾期と非交尾期の比較  
+### 被攻撃頻度  
+前提として、**交尾期には非交尾期よりもオスからメスへの攻撃頻度が高いのか**を検討する。ここでは、個体追跡中にメスが攻撃を受けた頻度の比較を行う。なお、交尾期のデータは<u>対象個体が発情しているときとしていないときで分ける</u>。  
+
+#### データの読み込み・加工  
+まず、個体追跡データから各フォーカルセッション中に攻撃を受けた回数を算出するためにデータを読み込み、加工する。    
+
+**交尾期**  
+```{r}
+focal_list_m <- focal_raw_fin %>% 
+  group_by(no_focal, date, subject, study_period,rs2) %>% 
+  summarise(duration = max(time),
+            no_agg = sum(agg_focal, na.rm = TRUE))
+```
+
+**非交尾期**  
+```{r}
+## 2019年  
+focal_list19nm <- focal_list19nm <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019nonmating/2019nonmating_raw.xlsx",
+                      sheet = "focal_raw")  %>% 
+  group_by(no_focal, date, subject) %>% 
+  summarise(duration = max(time),
+            no_agg = sum(agg_focal)) %>% 
+  ungroup() %>% 
+  mutate(study_period = "nm19",
+         no_focal = str_c(study_period,"_",no_focal))
+
+
+## 2021年
+focal_list21nm <-  read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2021nonmating/2021nonmating_raw.xlsx",
+                      sheet = "focal_list") %>% 
+  mutate(no_focal = str_c(study_period,"_",no_focal))
+
+## 2022年  
+focal_list22nm <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2022nonmating/2022nonmating_raw.xlsx",
+                      sheet = "focal_list") %>% 
+  mutate(no_focal = str_c(study_period,"_",no_focal))
+```
+
+全データを結合する。分析には、60分以上追跡した個体追跡セッションのみを用いる。    
+```{r}
+focal_list <- bind_rows(focal_list_m,focal_list19nm, focal_list21nm, focal_list22nm) %>% 
+  replace_na(list(rs2 = 0)) %>% 
+  mutate(mating = ifelse(str_detect(study_period,"nm"),0,1)) %>% 
+  mutate(cat = ifelse(rs2 == "1","est",
+                      ifelse(mating == "0", "nm", "nonest"))) %>% 
+  filter(duration >= 60) %>% 
+  mutate(logdur = log(duration/60))
+```
+
+データは以下の通り。  
+```{r}
+datatable(focal_list)
+```
+<br/>  
+
+#### 分析  
+##### モデリング  
+それでは、分析を行う。モデルの概要は以下の通り。  
+事前分布には弱情報事前分布を用いた。  
+
+- 分布: 負の二項分布  
+- 応答変数: オスから攻撃された回数(`no_agg`)    
+- オフセット項: 各セッションの観察時間(``)    
+- 説明変数: メスの発情状態`cat`(交尾期発情メス`est`、交尾期費発情`nonest`、非交尾期`nm`)  
+- ランダム切片: 追跡個体(`subject`)、調査期間(`study_period`)   
+
+```{r}
+m_aggcomp <- brm(no_agg ~ cat + offset(logdur) + (1|subject) + (1|study_period),
+                 family = negbinomial,
+                 iter = 5000, warmup = 2500, seed = 13,
+                 prior = c(prior(student_t(4,0,10), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                 control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                 backend = "cmdstanr",
+                 data = focal_list,
+                 file = "model/m_aggcomp.rds")
+```
+
+##### モデルチェック  
+`DHARMa`パッケージ及び、そのヘルパーパッケージである`DHARMa.helpers`パッケージを用いてモデルチェックを行う。  
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+check_aggcomp <- dh_check_brms(m_aggcomp)
+
+plot(check_aggcomp)
+```
+
+ゼロ過剰の問題もなかった。  
+```{r}
+testZeroInflation(check_aggcomp)
+```
+
+##### 結果の確認  
+モデルの結果は以下の通り。`Rhat`はすべて1.01以下であり、収束の問題はないと思われる。有向サンプルサイズにも大きな問題はない。    
+```{r}
+model_parameters(m_aggcomp)
+```
+
+多重比較の結果は以下の通り。被攻撃頻度は交尾期発情 > 交尾期費発情 > 非交尾期で、いずれの差も有意。  
+```{r}
+estimate_contrasts(m_aggcomp,
+                   contrast = "cat")
+```
+
+##### 結果の図示  
+```{r}
+signif <- data.frame(x = c(1,1,2),
+                     xend = c(2,3,3),
+                     y = c(2.2,5.5,5),
+                     yend = c(2.2, 5.5, 5),
+                     annotation = rep("***", 3))
+
+focal_list %>% 
+  ungroup() %>% 
+  mutate(cat = fct_relevel(cat,"nm","nonest","est")) %>% 
+  ggplot(aes(x = cat, y = no_agg*60/duration))+
+  geom_violin(scale = "width",
+              fill = "grey65",
+              color = "white",
+              bw = 0.2)+
+  geom_boxplot(width = 0.2,
+               outlier.alpha = 0) +
+  geom_signif(comparisons = list(c("nm","nonest")),
+              y_position = 2.1,
+              annotation = "***") +
+  geom_signif(comparisons = list(c("nonest","est")),
+              y_position = 5,
+              annotation = "***") +
+  geom_signif(comparisons = list(c("nm","est")),
+              y_position = 5.3,
+              annotation = "***") +
+  scale_y_continuous(breaks = seq(0,6,1)) +
+  theme_bw(base_size = 15)+
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)") +
+  scale_x_discrete(labels = c("非交尾期", "交尾期\n(非発情)","交尾期\n(発情)"))+
+  theme(axis.title.y = element_text(angle = 0,
+                                    vjust = 0.5,
+                                    family = "Yu Mincho"),
+        axis.text.x = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman",
+                                   size = 18)) -> p_aggcomp
+
+# ggsave("figure/p_aggcomp.png", p_aggcomp)
+```
+
+結果は以下のようになる(図\@ref(fig:fig-aggcomp))。  
+```{r fig-aggcomp, echo=FALSE, out.width="75%", fig.cap="季節ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_aggcomp.png")
+```
+<br/>  
+
+### 怪我の頻度  
+それでは、実際にオスの攻撃が多い交尾期に怪我が多くなるかを調べる。  
+
+```{r}
+female_time <- read_csv("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/combined_data/female_pre_all.csv") %>% 
+  mutate(date = as_date(date))
+
+att <- read_csv("data/attributes.csv")
+```
+
+```{r}
+base_18b %>% 
+  bind_rows(base_19_nm, base_19b, base_20_nm, base_20b, base_21_nm, base_21b, base_22_nm) -> base_all
+
+male_pre18 %>% 
+  bind_rows(male_pre19_nm, male_pre19, male_pre20_nm, male_pre20, male_pre21_nm, male_pre21, male_pre22_nm) %>% 
+  select(date,TY)-> TY_presence
+
+female_time %>% 
+  pivot_longer(cols = Kur:Har,
+               names_to = "femaleID",
+               values_to = "presence") %>% 
+  left_join(base_all %>% select(date, duration,  study_period),
+            by = "date") %>% 
+  mutate(date = as_date(date)) %>% 
+  left_join(att, by = c("study_period","femaleID")) %>% 
+  left_join(TY_presence, by = "date")-> female_time_long
+```
+
+
+
+```{r}
+
+```
+
+
+

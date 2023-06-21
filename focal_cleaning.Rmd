@@ -1,0 +1,186 @@
+# データクリーニング  
+2019~2021年交尾期の個体追跡データを読み込み、データを加工する。  
+
+## データの読み込み  
+個体追跡データを読み込む。  
+```{r}
+## 2018交尾期  
+focal_raw18 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2018mating/2018mating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2),"numeric","text",
+                                    rep("numeric",3),rep("text",9),rep("numeric",2),rep("text",6),rep("numeric",5),rep("text",2))) %>% 
+  mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
+  mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
+
+## 2019交尾期
+focal_raw19 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019mating/2019mating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2),"numeric","text",
+                                    rep("numeric",3),rep("text",9),rep("numeric",2),rep("text",6),rep("numeric",5),rep("text",2))) %>% 
+  mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
+  mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
+
+## 2020交尾期  
+focal_raw20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2), "numeric","text",
+                                    rep("numeric",3),rep("text",21),rep("numeric",2),rep("text",4),rep("numeric",4),"text","numeric","text")) %>% 
+  mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
+  mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
+
+
+## 2021交尾期
+focal_raw21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2021mating/2021mating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2), "numeric","text",
+                                    rep("numeric",3), rep("text",21),rep("numeric",2),rep("text",4),rep("numeric",4),"text","numeric","text")) %>% 
+  mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
+  mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
+
+## まとめる  
+focal_raw18 %>% 
+  bind_rows(focal_raw19, focal_raw20, focal_raw21) %>% 
+  mutate(study_period = ifelse(date <= "2018-12-10","m18",
+                               ifelse(date >= "2019-09-01" & date <= "2019-12-31","m19",
+                                      ifelse(date >= "2020-09-01" & date <= "2020-12-31","m20","m21")))) %>% 
+  mutate(year = year(date)) %>% 
+  mutate(no_focal = str_c(study_period,"_",no_focal)) %>% 
+  dplyr::select(-(app_sub:no_lv2)) -> focal_raw
+```
+
+データは以下の通り。  
+```{r}
+datatable(focal_raw,
+          options = list(scrollX = 60))
+```
+<br/>  
+
+## データの加工  
+### 追跡個体の発情状態と各観察日の確認メス数の追加  
+各観察日に群れで確認されたメス数(6歳以上)と、追跡個体の発情状態の列を追加する。  
+
+```{r}
+female18 %>%
+  bind_rows(female19) %>% 
+  bind_rows(female20) %>% 
+  bind_rows(female21) -> female_all
+
+female_all %>% 
+  filter(age >= 6) %>% 
+  group_by(date) %>% 
+  summarise(no_female = sum(presence)) -> no_female
+
+focal_raw %>% 
+  left_join(no_female, by = "date") %>% 
+  left_join(female_all %>% dplyr::select(date, femaleID, rank, rs2),
+            by = c("date", "subject" = "femaleID")) -> focal_raw_b
+```
+
+### オスの情報の追加  
+#### 群れ外オスの数  
+各観察日に群れで確認された群れオス以外のオスの数(`no_ntm`)を追加する。なお、２０１８年についてはデータがない。  
+各観察期間について以下のオスたちを群れオスとした。  
+
+- 2018~2019年: *TY*、*IT*、*LK*、*KR*  
+- 2020年: *TY*、*IT*、*KR*、*KM*  
+- 2021年: *TY*、*KR*、*KM*    
+
+```{r}
+male19 %>% 
+  bind_rows(male20) %>% 
+  bind_rows(male21) %>% 
+  mutate(year = year(date)) %>% 
+  mutate(ntm = ifelse(year == "2019" & maleID %in% c("TY","IT","KR","LK"),0,
+                      ifelse(year == "2020" & maleID %in% c("TY","IT","KR","KM"),0,
+                             ifelse(year == "2021" & maleID %in% c("TY","KR","KM"),0,1)))) %>% 
+  replace_na(list(presence = 0))-> male_all
+
+male_all %>% 
+  group_by(date) %>% 
+  filter(ntm == "1") %>% 
+  summarise(no_ntm= sum(presence)) %>% 
+  ungroup() %>% 
+  right_join(focal_raw_b, by = "date") -> focal_raw_c
+```
+
+### TYとITの確認状況  
+調査期間中、第一位オスのタイヨウ(*TY*)と第二位オスのイツモ(*IT*)の群れへの出入りが頻繁に観察された。  
+そこで、彼らが個体追跡時にいたか否かについての列(`TY`、`IT`)を追加する。  
+
+彼らが確認できた時刻に関するデータを読み込む。  
+```{r}
+hrmales_pre19 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019mating/2019mating_raw.xlsx",
+                      sheet = "male_presence_long",
+                      col_types = c("date","text","numeric","date","date")) %>% 
+  mutate(in_atleast = as_datetime(str_c(date," ", format(as.POSIXct(in_atleast), format = "%H:%M:%S")))) %>% 
+  mutate(out_atleast = as_datetime(str_c(date," ", format(as.POSIXct(out_atleast), format = "%H:%M:%S")))) 
+
+hrmales_pre20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
+                      sheet = "male_presence_long",
+                      col_types = c("date","text","numeric",rep("text",2),"date","date","numeric")) %>% 
+  dplyr::select(-`in`,-out, -all_day) %>% 
+  mutate(in_atleast = as_datetime(str_c(date," ", format(as.POSIXct(in_atleast), format = "%H:%M:%S")))) %>% 
+  mutate(out_atleast = as_datetime(str_c(date," ", format(as.POSIXct(out_atleast), format = "%H:%M:%S")))) 
+
+hrmales_pre21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2021mating/2021mating_raw.xlsx",
+                      sheet = "male_presence_long",
+                      col_types = c("date","text","numeric","date","date")) %>% 
+  mutate(in_atleast = as_datetime(str_c(date," ", format(as.POSIXct(in_atleast), format = "%H:%M:%S")))) %>% 
+  mutate(out_atleast = as_datetime(str_c(date," ", format(as.POSIXct(out_atleast), format = "%H:%M:%S")))) 
+
+hrmales_pre <- bind_rows(hrmales_pre19, hrmales_pre20, hrmales_pre21)
+```
+
+個体追跡データのデータシートに列を追加する。  
+```{r}
+## データの加工
+hrmales_pre %>%
+  left_join(bind_rows(base_19b,base_20b,base_21b) %>% dplyr::select(date, start, fin), by = "date") %>% 
+  mutate(in_atleast = ifelse(male_presence == "1" & is.na(in_atleast), start, in_atleast)) %>% 
+  mutate(out_atleast = ifelse(male_presence == "1" & is.na(out_atleast), fin, out_atleast)) %>% 
+  mutate(in_atleast = as_datetime(in_atleast),
+         out_atleast = as_datetime(out_atleast)) %>% 
+  dplyr::select(-start,-fin) -> hrmales_pre_b
+
+## TY
+focal_raw_c %>% 
+  left_join(hrmales_pre_b %>% filter(maleID == "TY"), by = "date") %>% 
+  mutate(TY = ifelse(male_presence == "0",0,
+                     ifelse(male_presence == "1" & start_time >= in_atleast & fin_time <= out_atleast, 1,
+                            ifelse(male_presence == "1" & fin_time <= in_atleast, 0,
+                                   ifelse(male_presence == "1" & start_time >= out_atleast, 0, 2))))) %>% 
+  dplyr::select(-male_presence, -in_atleast, -out_atleast, -maleID)-> focal_raw_d
+
+
+## IT
+focal_raw_d %>% 
+  left_join(hrmales_pre_b %>% filter(maleID == "IT"), by = "date") %>% 
+  mutate(IT = ifelse(male_presence == "0",0,
+                     ifelse(male_presence == "1" & start_time >= in_atleast & fin_time <= out_atleast, 1,
+                            ifelse(male_presence == "1" & fin_time <= in_atleast, 0,
+                                   ifelse(male_presence == "1" & start_time >= out_atleast, 0, 2))))) %>% 
+  dplyr::select(-male_presence, -in_atleast, -out_atleast, -maleID) -> focal_raw_e
+
+## 2018年については出入りはないので出欠状況  
+male_pre18 %>% 
+  dplyr::select(date, TY,IT) %>% 
+  rename(TY18 = TY, IT18 = IT) %>% 
+  right_join(focal_raw_e, by = "date") %>% 
+  mutate(TY = ifelse(study_period == "m18", TY18,TY)) %>% 
+  mutate(IT = ifelse(study_period == "m18", IT18, IT)) %>% 
+  dplyr::select(-TY18, -IT18)-> focal_raw_fin
+```
+
+フォーカルの途中でTYまたはITの確認状況が変わったものが５つあった。
+```{r}
+focal_raw_fin %>% 
+  filter(IT == "2"| TY == "2") %>% 
+  distinct(date, no_focal, subject, TY, IT)
+```
+
+加工したデータは以下の通り。  
+```{r}
+datatable(focal_raw_fin,
+          options = list(scrollX = 60))
+```
+

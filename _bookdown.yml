@@ -1,0 +1,14 @@
+book_filename: "Cohesion"  
+rmd_files:                    
+  - index.Rmd
+  - Chapter0.Rmd
+  - Chapter1.Rmd 
+  - focal_cleaning.Rmd
+  - cost_of_aggression.Rmd  
+  - sessioninfo.Rmd
+output_dir: "docs"  
+toc_depth: 4  
+language:
+  label:
+    fig: "図"
+    tab: "表"

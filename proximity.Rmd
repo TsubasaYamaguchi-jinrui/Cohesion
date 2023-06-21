@@ -1,0 +1,177 @@
+```{r}
+focal18_raw <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2018mating/2018mating_raw.xlsx",
+                      sheet = "focal_raw")
+
+focal18_raw %>% 
+  mutate(type = ifelse(str_detect(Event,"Bite"),4,
+                                  ifelse(str_detect(Event,"Grab"),3,
+                                         ifelse(str_detect(Event,"Slap"),3,
+                                                    ifelse(str_detect(Event,"Ch"),2,
+                                                                      ifelse(str_detect(Event,"Lg"),1,
+                                                                             ifelse(str_detect(Event,"Th"),0,
+                                                                                    ifelse(str_detect(Event,"Sup"),0,"NA")))))))) -> a
+
+focal18_raw %>% 
+  mutate(aggressor = sub(".*\\(", "",Event)) %>% 
+  mutate(aggressor = sub(",.*","", aggressor)) %>% 
+  mutate(victim = sub(".*,","",Event)) %>% 
+  mutate(victim = sub("\\)","",victim)) -> a
+
+write_csv(a,"b.csv")
+
+focal19 %>% 
+  separate(x0_1m, into = str_c("x0_1m",1:5), sep = ",") %>% 
+  separate(x1_3m, into = str_c("x1_3m",1:7), sep = ",") %>% 
+  separate(x3_5m, into = str_c("x3_5m",1:10), sep = ",") %>% 
+  separate(x5_10m, into = str_c("x5_10m", 1:9), sep = ",") %>% 
+  pivot_longer(cols = x0_1m1:x5_10m9,
+               names_to = "proximity",
+               values_to = "ID") %>% 
+  mutate(proximity = ifelse(str_detect(proximity,"x0_1m"),"x0_1m",
+                            ifelse(str_detect(proximity,"x1_3m"),"x1_3m",
+                                   ifelse(str_detect(proximity,"x3_5m"),"x3_5m",
+                                          ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) -> focal19_prox
+
+
+adult <- c("Aka","Ako","Anz","Kil","Kit","Koh","Kol","Kun","Ntr","Ten","Tot","Tam","Mik","Mif","Mal","Mei","TY","IT","KR","LK","Hen","Hot","Kur")
+
+focal19_prox %>% 
+  filter(RG == "1") %>% 
+  filter(!is.na(ID)) %>% 
+  filter(ID %in% adult) %>% 
+  group_by(date,no_focal, time) %>% 
+  summarise(N = n() + 1) %>% 
+  ungroup()-> a
+
+focal19 %>% 
+  left_join(a, by = c("date","time","no_focal")) %>% 
+  filter(RG == "1") %>% 
+  mutate(ok = ifelse(RGsize == N, 1,0)) %>% 
+  select(no_focal, date,subject, time,activity,RGsize, x0_1m, x1_3m,x3_5m,x5_10m,N,ok) -> ok
+```
+
+```{r}
+library(readxl)
+focal20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),"date","date", "date",rep("text",1),rep("numeric",2), rep("text",3),
+                                    rep("numeric",4),rep("text",21),rep("numeric",2),rep("text",8)))
+
+focal20 <- focal20 %>% 
+                      mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(focal20$start_time), format = "%H:%M:%S")))) %>% 
+                      mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(focal20$fin_time), format = "%H:%M:%S")))) 
+
+
+```
+
+```{r}
+focal20 %>% 
+  separate(x0_1m, into = str_c("x0_1m",1:10), sep = ",") %>% 
+  separate(x1_3m, into = str_c("x1_3m",1:14), sep = ",") %>% 
+  separate(x3_5m, into = str_c("x3_5m",1:16), sep = ",") %>% 
+  separate(x5_10m, into = str_c("x5_10m", 1:7), sep = ",") %>% 
+  pivot_longer(cols = x0_1m1:x5_10m7,
+               names_to = "proximity",
+               values_to = "ID") %>% 
+  mutate(proximity = ifelse(str_detect(proximity,"x0_1m"),"x0_1m",
+                            ifelse(str_detect(proximity,"x1_3m"),"x1_3m",
+                                   ifelse(str_detect(proximity,"x3_5m"),"x3_5m",
+                                          ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) -> focal20_prox
+
+
+adult <- c("Aka","Ako","Anz","Kil","Kit","Koh","Coc","Kol","Kun","Ntr","Ntm","Ten","Tot","Tam","Trt","Mik","Mif","Mal","Mei","TY","IT","KR","KM","Hen","Hot")
+
+focal20_prox %>% 
+  filter(RG == "1") %>% 
+  filter(!is.na(ID)) %>% 
+  filter(ID %in% adult) %>% 
+  group_by(date,no_focal, time) %>% 
+  summarise(N = n() + 1) %>% 
+  ungroup()-> a
+
+focal20 %>% 
+  left_join(a, by = c("date","time","no_focal")) %>% 
+  filter(RG == "1") %>% 
+  mutate(ok = ifelse(RGsize == N, 1,0)) %>% 
+  select(no_focal, date,subject, time,activity,RGsize, x0_1m, x1_3m,x3_5m,x5_10m,N,ok) -> ok
+```
+
+```{r}
+library(readxl)
+focal21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2021mating/2021mating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),"date","date", "date",rep("text",1),rep("numeric",2), rep("text",3),
+                                    rep("numeric",4),rep("text",21),rep("numeric",2),rep("text",8))) 
+
+focal21 <- focal21 %>% 
+           mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(focal21$start_time), format = "%H:%M:%S")))) %>% 
+           mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(focal21$fin_time), format = "%H:%M:%S")))) 
+```
+
+```{r}
+
+focal21 %>% 
+  separate(x0_1m, into = str_c("x0_1m",1:11), sep = ",") %>% 
+  separate(x1_3m, into = str_c("x1_3m",1:15), sep = ",") %>% 
+  separate(x3_5m, into = str_c("x3_5m",1:8), sep = ",") %>% 
+  separate(x5_10m, into = str_c("x5_10m", 1:5), sep = ",") %>% 
+  pivot_longer(cols = x0_1m1:x5_10m5,
+               names_to = "proximity",
+               values_to = "ID") %>% 
+  mutate(proximity = ifelse(str_detect(proximity,"x0_1m"),"x0_1m",
+                            ifelse(str_detect(proximity,"x1_3m"),"x1_3m",
+                                   ifelse(str_detect(proximity,"x3_5m"),"x3_5m",
+                                          ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) -> focal21_prox
+
+
+adult <- c("Aka","Ako","Anz","Kil","Kit","Koh","Coc","Kol","Kun","Ntr","Ntm","Ten","Tot","Tam","Trt","Mik","Mif","Mal","Mei","TY","IT","KR","KM","Hen","Hot","Har")
+
+focal21_prox %>% 
+  filter(RG == "1") %>% 
+  filter(!is.na(ID)) %>% 
+  filter(ID %in% adult) %>% 
+  group_by(date,no_focal, time) %>% 
+  summarise(N = n() + 1) %>% 
+  ungroup()-> a
+
+focal21 %>% 
+  left_join(a, by = c("date","time","no_focal")) %>% 
+  filter(RG == "1") %>% 
+  mutate(ok = ifelse(RGsize == N, 1,0)) %>% 
+  select(no_focal, date,subject, time,activity,RGsize, x0_1m, x1_3m,x3_5m,x5_10m,N,ok) -> ok
+
+
+write_csv(ok,"ok.csv")
+```
+
+
+```{r}
+focal <- read.delim("clipboard", header = T)
+
+colnames(focal) <- colnames(focal20)
+
+focal %>% 
+  separate(x0_1m, into = str_c("x0_1m",1:10), sep = ",") %>% 
+  separate(x1_3m, into = str_c("x1_3m",1:14), sep = ",") %>% 
+  separate(x3_5m, into = str_c("x3_5m",1:16), sep = ",") %>% 
+  separate(x5_10m, into = str_c("x5_10m", 1:7), sep = ",") %>% 
+  pivot_longer(cols = x0_1m1:x5_10m7,
+               names_to = "proximity",
+               values_to = "ID") %>% 
+  mutate(proximity = ifelse(str_detect(proximity,"x0_1m"),"x0_1m",
+                            ifelse(str_detect(proximity,"x1_3m"),"x1_3m",
+                                   ifelse(str_detect(proximity,"x3_5m"),"x3_5m",
+                                          ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) -> focal_prox
+
+
+adult <- c("Aka","Ako","Anz","Kil","Kit","Koh","Coc","Kol","Kun","Ntr","Ntm","Ten","Tot","Tam","Trt","Mik","Mif","Mal","Mei","TY","IT","KR","KM","Hen","Hot","Har")
+
+focal_prox %>% 
+  filter(ID %in% adult) %>% 
+  group_by(date,no_focal, time) %>% 
+  summarise(N = n() + 1) %>% 
+  ungroup()-> a
+
+```
+
+
