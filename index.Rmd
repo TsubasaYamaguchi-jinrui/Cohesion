@@ -7,7 +7,7 @@ output:
     split_by: rmd  
     split_bib: yes  
     number_sections: true   
-    toc_depth: 4 
+    toc_depth: 5   
     css: custom_style.css   
     df_print: paged  
 site: bookdown::bookdown_site  
