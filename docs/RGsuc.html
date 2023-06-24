@@ -23,7 +23,7 @@
 <meta name="author" content="Tsubasa Yamaguchi" />
 
 
-<meta name="date" content="2023-06-24" />
+<meta name="date" content="2023-06-25" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -173,12 +173,17 @@ div.csl-indent {
 <li class="chapter" data-level="2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#データの読み込み"><i class="fa fa-check"></i><b>2.1</b> データの読み込み</a></li>
 <li class="chapter" data-level="2.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#データの加工"><i class="fa fa-check"></i><b>2.2</b> データの加工</a>
 <ul>
-<li class="chapter" data-level="2.2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#追跡個体の発情状態と各観察日の確認メス数の追加"><i class="fa fa-check"></i><b>2.2.1</b> 追跡個体の発情状態と各観察日の確認メス数の追加</a></li>
+<li class="chapter" data-level="2.2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#メス情報の追加"><i class="fa fa-check"></i><b>2.2.1</b> メス情報の追加</a>
+<ul>
+<li class="chapter" data-level="2.2.1.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#追跡個体の発情状態と各観察日の確認メス数の追加"><i class="fa fa-check"></i><b>2.2.1.1</b> 追跡個体の発情状態と各観察日の確認メス数の追加</a></li>
+<li class="chapter" data-level="2.2.1.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#各観察日の発情メス数のデータを追加"><i class="fa fa-check"></i><b>2.2.1.2</b> 各観察日の発情メス数のデータを追加</a></li>
+</ul></li>
 <li class="chapter" data-level="2.2.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#オスの情報の追加"><i class="fa fa-check"></i><b>2.2.2</b> オスの情報の追加</a>
 <ul>
-<li class="chapter" data-level="2.2.2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#群れ外オスの数"><i class="fa fa-check"></i><b>2.2.2.1</b> 群れ外オスの数</a></li>
+<li class="chapter" data-level="2.2.2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#s-ntm"><i class="fa fa-check"></i><b>2.2.2.1</b> 群れ外オスの数</a></li>
+<li class="chapter" data-level="2.2.2.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#tyとitの確認状況"><i class="fa fa-check"></i><b>2.2.2.2</b> TYとITの確認状況</a></li>
+<li class="chapter" data-level="2.2.2.3" data-path="focal_cleaning.html"><a href="focal_cleaning.html#フォーカルを攻撃したオスのid"><i class="fa fa-check"></i><b>2.2.2.3</b> フォーカルを攻撃したオスのID</a></li>
 </ul></li>
-<li class="chapter" data-level="2.2.3" data-path="focal_cleaning.html"><a href="focal_cleaning.html#tyとitの確認状況"><i class="fa fa-check"></i><b>2.2.3</b> TYとITの確認状況</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="3" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html"><i class="fa fa-check"></i><b>3</b> オスの攻撃はメスのコストになっているのか</a>
@@ -261,21 +266,21 @@ div.csl-indent {
 <div id="データの加工-2" class="section level2 hasAnchor" number="4.1">
 <h2><span class="header-section-number">4.1</span> データの加工<a href="RGsuc.html#データの加工-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>個体追跡データから、地上での休息が何回連続で起こっているのかを計算する。</p>
-<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="RGsuc.html#cb56-1" tabindex="-1"></a>focal_raw <span class="sc">%&gt;%</span> </span>
-<span id="cb56-2"><a href="RGsuc.html#cb56-2" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">RG =</span> <span class="fu">ifelse</span>(activity <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;R&quot;</span>,<span class="st">&quot;G&quot;</span>) <span class="sc">&amp;</span> T_G <span class="sc">==</span> <span class="st">&quot;G&quot;</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb56-3"><a href="RGsuc.html#cb56-3" tabindex="-1"></a>  <span class="fu">group_by</span>(no_focal, date, study_period, subject) <span class="sc">%&gt;%</span> </span>
-<span id="cb56-4"><a href="RGsuc.html#cb56-4" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">N =</span> <span class="fu">rle</span>(RG)<span class="sc">$</span>lengths,</span>
-<span id="cb56-5"><a href="RGsuc.html#cb56-5" tabindex="-1"></a>            <span class="at">RG =</span> <span class="fu">rle</span>(RG)<span class="sc">$</span>values) <span class="sc">%&gt;%</span> </span>
-<span id="cb56-6"><a href="RGsuc.html#cb56-6" tabindex="-1"></a>  <span class="fu">filter</span>(RG <span class="sc">==</span> <span class="st">&quot;1&quot;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb56-7"><a href="RGsuc.html#cb56-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">N_minus =</span> N<span class="dv">-1</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb56-8"><a href="RGsuc.html#cb56-8" tabindex="-1"></a>  <span class="fu">ungroup</span>()<span class="ot">-&gt;</span> N_suc</span></code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb60-1"><a href="RGsuc.html#cb60-1" tabindex="-1"></a>focal_raw <span class="sc">%&gt;%</span> </span>
+<span id="cb60-2"><a href="RGsuc.html#cb60-2" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">RG =</span> <span class="fu">ifelse</span>(activity <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;R&quot;</span>,<span class="st">&quot;G&quot;</span>) <span class="sc">&amp;</span> T_G <span class="sc">==</span> <span class="st">&quot;G&quot;</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb60-3"><a href="RGsuc.html#cb60-3" tabindex="-1"></a>  <span class="fu">group_by</span>(no_focal, date, study_period, subject) <span class="sc">%&gt;%</span> </span>
+<span id="cb60-4"><a href="RGsuc.html#cb60-4" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">N =</span> <span class="fu">rle</span>(RG)<span class="sc">$</span>lengths,</span>
+<span id="cb60-5"><a href="RGsuc.html#cb60-5" tabindex="-1"></a>            <span class="at">RG =</span> <span class="fu">rle</span>(RG)<span class="sc">$</span>values) <span class="sc">%&gt;%</span> </span>
+<span id="cb60-6"><a href="RGsuc.html#cb60-6" tabindex="-1"></a>  <span class="fu">filter</span>(RG <span class="sc">==</span> <span class="st">&quot;1&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb60-7"><a href="RGsuc.html#cb60-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">N_minus =</span> N<span class="dv">-1</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb60-8"><a href="RGsuc.html#cb60-8" tabindex="-1"></a>  <span class="fu">ungroup</span>()<span class="ot">-&gt;</span> N_suc</span></code></pre></div>
 <p>連続した回数ごとの度数を示したのが以下の図である(図<a href="RGsuc.html#fig:fig-Nsuc">4.1</a>)。</p>
-<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="RGsuc.html#cb57-1" tabindex="-1"></a>N_suc <span class="sc">%&gt;%</span> </span>
-<span id="cb57-2"><a href="RGsuc.html#cb57-2" tabindex="-1"></a>  <span class="fu">group_by</span>(N) <span class="sc">%&gt;%</span> </span>
-<span id="cb57-3"><a href="RGsuc.html#cb57-3" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">num =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span> </span>
-<span id="cb57-4"><a href="RGsuc.html#cb57-4" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> N, <span class="at">y =</span> num))<span class="sc">+</span></span>
-<span id="cb57-5"><a href="RGsuc.html#cb57-5" tabindex="-1"></a>  <span class="fu">geom_col</span>()<span class="sc">+</span></span>
-<span id="cb57-6"><a href="RGsuc.html#cb57-6" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">121</span>,<span class="dv">1</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="RGsuc.html#cb61-1" tabindex="-1"></a>N_suc <span class="sc">%&gt;%</span> </span>
+<span id="cb61-2"><a href="RGsuc.html#cb61-2" tabindex="-1"></a>  <span class="fu">group_by</span>(N) <span class="sc">%&gt;%</span> </span>
+<span id="cb61-3"><a href="RGsuc.html#cb61-3" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">num =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb61-4"><a href="RGsuc.html#cb61-4" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> N, <span class="at">y =</span> num))<span class="sc">+</span></span>
+<span id="cb61-5"><a href="RGsuc.html#cb61-5" tabindex="-1"></a>  <span class="fu">geom_col</span>()<span class="sc">+</span></span>
+<span id="cb61-6"><a href="RGsuc.html#cb61-6" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">121</span>,<span class="dv">1</span>))</span></code></pre></div>
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig-Nsuc"></span>
 <img src="Cohesion_files/figure-html/fig-Nsuc-1.png" alt="地上での休息が何回連続で続いたか" width="672" />
 <p class="caption">
@@ -289,28 +294,28 @@ div.csl-indent {
 <h3><span class="header-section-number">4.2.1</span> モデリング<a href="RGsuc.html#モデリング-4" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>以下では、一時的な休息がそうでない休息に混ざっていると仮定するゼロ過剰モデルと、そうではないモデルをデータに適用する。なお、<strong>ゼロ過剰モデルを適用するため、休息の連続回数から1を引く</strong>。</p>
 <p>いずれのモデルにも負の二項分布を適用した。ゼロ過剰モデルについては、<a href="https://tsubasayamaguchi-jinrui.github.io/Zeroinflation/">こちら</a>を参照。</p>
-<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="RGsuc.html#cb58-1" tabindex="-1"></a><span class="do">## ゼロ過剰モデル</span></span>
-<span id="cb58-2"><a href="RGsuc.html#cb58-2" tabindex="-1"></a>m_rgsuc_zi <span class="ot">&lt;-</span> <span class="fu">brm</span>(<span class="fu">bf</span>(N_minus <span class="sc">~</span> study_period <span class="sc">+</span>  (<span class="dv">1</span><span class="sc">|</span>subject),</span>
-<span id="cb58-3"><a href="RGsuc.html#cb58-3" tabindex="-1"></a>                  zi <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject)),</span>
-<span id="cb58-4"><a href="RGsuc.html#cb58-4" tabindex="-1"></a>                  <span class="at">family =</span> <span class="fu">zero_inflated_negbinomial</span>(),</span>
-<span id="cb58-5"><a href="RGsuc.html#cb58-5" tabindex="-1"></a>                  <span class="at">iter =</span> <span class="dv">5000</span>, <span class="at">warmup =</span> <span class="dv">2500</span>, <span class="at">seed =</span> <span class="dv">13</span>,</span>
-<span id="cb58-6"><a href="RGsuc.html#cb58-6" tabindex="-1"></a>                  <span class="at">control=</span><span class="fu">list</span>(<span class="at">adapt_delta =</span> <span class="fl">0.999</span>, <span class="at">max_treedepth =</span> <span class="dv">15</span>),</span>
-<span id="cb58-7"><a href="RGsuc.html#cb58-7" tabindex="-1"></a>                  <span class="at">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>,</span>
-<span id="cb58-8"><a href="RGsuc.html#cb58-8" tabindex="-1"></a>                  <span class="at">data =</span> N_suc,</span>
-<span id="cb58-9"><a href="RGsuc.html#cb58-9" tabindex="-1"></a>                  <span class="at">file =</span> <span class="st">&quot;model/m_rgsuc_zi.rds&quot;</span>)</span>
-<span id="cb58-10"><a href="RGsuc.html#cb58-10" tabindex="-1"></a></span>
-<span id="cb58-11"><a href="RGsuc.html#cb58-11" tabindex="-1"></a>m_rgsuc_nb <span class="ot">&lt;-</span> <span class="fu">brm</span>(N_minus <span class="sc">~</span> study_period <span class="sc">+</span>  (<span class="dv">1</span><span class="sc">|</span>subject),</span>
-<span id="cb58-12"><a href="RGsuc.html#cb58-12" tabindex="-1"></a>                  <span class="at">family =</span> negbinomial,</span>
-<span id="cb58-13"><a href="RGsuc.html#cb58-13" tabindex="-1"></a>                  <span class="at">iter =</span> <span class="dv">5000</span>, <span class="at">warmup =</span> <span class="dv">2500</span>, <span class="at">seed =</span> <span class="dv">13</span>,</span>
-<span id="cb58-14"><a href="RGsuc.html#cb58-14" tabindex="-1"></a>                  <span class="at">control=</span><span class="fu">list</span>(<span class="at">adapt_delta =</span> <span class="fl">0.999</span>, <span class="at">max_treedepth =</span> <span class="dv">15</span>),</span>
-<span id="cb58-15"><a href="RGsuc.html#cb58-15" tabindex="-1"></a>                  <span class="at">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>,</span>
-<span id="cb58-16"><a href="RGsuc.html#cb58-16" tabindex="-1"></a>                  <span class="at">data =</span> N_suc,</span>
-<span id="cb58-17"><a href="RGsuc.html#cb58-17" tabindex="-1"></a>                  <span class="at">file =</span> <span class="st">&quot;model/m_rgsuc_nb.rds&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="RGsuc.html#cb62-1" tabindex="-1"></a><span class="do">## ゼロ過剰モデル</span></span>
+<span id="cb62-2"><a href="RGsuc.html#cb62-2" tabindex="-1"></a>m_rgsuc_zi <span class="ot">&lt;-</span> <span class="fu">brm</span>(<span class="fu">bf</span>(N_minus <span class="sc">~</span> study_period <span class="sc">+</span>  (<span class="dv">1</span><span class="sc">|</span>subject),</span>
+<span id="cb62-3"><a href="RGsuc.html#cb62-3" tabindex="-1"></a>                  zi <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject)),</span>
+<span id="cb62-4"><a href="RGsuc.html#cb62-4" tabindex="-1"></a>                  <span class="at">family =</span> <span class="fu">zero_inflated_negbinomial</span>(),</span>
+<span id="cb62-5"><a href="RGsuc.html#cb62-5" tabindex="-1"></a>                  <span class="at">iter =</span> <span class="dv">5000</span>, <span class="at">warmup =</span> <span class="dv">2500</span>, <span class="at">seed =</span> <span class="dv">13</span>,</span>
+<span id="cb62-6"><a href="RGsuc.html#cb62-6" tabindex="-1"></a>                  <span class="at">control=</span><span class="fu">list</span>(<span class="at">adapt_delta =</span> <span class="fl">0.999</span>, <span class="at">max_treedepth =</span> <span class="dv">15</span>),</span>
+<span id="cb62-7"><a href="RGsuc.html#cb62-7" tabindex="-1"></a>                  <span class="at">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>,</span>
+<span id="cb62-8"><a href="RGsuc.html#cb62-8" tabindex="-1"></a>                  <span class="at">data =</span> N_suc,</span>
+<span id="cb62-9"><a href="RGsuc.html#cb62-9" tabindex="-1"></a>                  <span class="at">file =</span> <span class="st">&quot;model/m_rgsuc_zi.rds&quot;</span>)</span>
+<span id="cb62-10"><a href="RGsuc.html#cb62-10" tabindex="-1"></a></span>
+<span id="cb62-11"><a href="RGsuc.html#cb62-11" tabindex="-1"></a>m_rgsuc_nb <span class="ot">&lt;-</span> <span class="fu">brm</span>(N_minus <span class="sc">~</span> study_period <span class="sc">+</span>  (<span class="dv">1</span><span class="sc">|</span>subject),</span>
+<span id="cb62-12"><a href="RGsuc.html#cb62-12" tabindex="-1"></a>                  <span class="at">family =</span> negbinomial,</span>
+<span id="cb62-13"><a href="RGsuc.html#cb62-13" tabindex="-1"></a>                  <span class="at">iter =</span> <span class="dv">5000</span>, <span class="at">warmup =</span> <span class="dv">2500</span>, <span class="at">seed =</span> <span class="dv">13</span>,</span>
+<span id="cb62-14"><a href="RGsuc.html#cb62-14" tabindex="-1"></a>                  <span class="at">control=</span><span class="fu">list</span>(<span class="at">adapt_delta =</span> <span class="fl">0.999</span>, <span class="at">max_treedepth =</span> <span class="dv">15</span>),</span>
+<span id="cb62-15"><a href="RGsuc.html#cb62-15" tabindex="-1"></a>                  <span class="at">backend =</span> <span class="st">&quot;cmdstanr&quot;</span>,</span>
+<span id="cb62-16"><a href="RGsuc.html#cb62-16" tabindex="-1"></a>                  <span class="at">data =</span> N_suc,</span>
+<span id="cb62-17"><a href="RGsuc.html#cb62-17" tabindex="-1"></a>                  <span class="at">file =</span> <span class="st">&quot;model/m_rgsuc_nb.rds&quot;</span>)</span></code></pre></div>
 <div id="モデルチェック-4" class="section level4 hasAnchor" number="4.2.1.1">
 <h4><span class="header-section-number">4.2.1.1</span> モデルチェック<a href="RGsuc.html#モデルチェック-4" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>負の二項分布でもゼロ過剰にはなっていなかった。つまり、ゼロ過剰モデルを仮定しなくてもデータの0の多さを説明できているということである。</p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="RGsuc.html#cb59-1" tabindex="-1"></a><span class="fu">testZeroInflation</span>(check_nb)</span></code></pre></div>
-<p><img src="Cohesion_files/figure-html/unnamed-chunk-63-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="RGsuc.html#cb63-1" tabindex="-1"></a><span class="fu">testZeroInflation</span>(check_nb)</span></code></pre></div>
+<p><img src="Cohesion_files/figure-html/unnamed-chunk-67-1.png" width="672" style="display: block; margin: auto;" /></p>
 <pre><code>## 
 ##  DHARMa zero-inflation test via comparison to expected zeros with
 ##  simulation under H0 = fitted model
@@ -323,7 +328,7 @@ div.csl-indent {
 <h4><span class="header-section-number">4.2.1.2</span> 結果の確認<a href="RGsuc.html#結果の確認-4" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p><strong>ゼロ過剰モデル</strong><br />
 推定されたゼロ過剰の切片は-4.97である。これは、0.01でしか「偽物の」ゼロが含まれていないことを示している。</p>
-<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="RGsuc.html#cb61-1" tabindex="-1"></a><span class="fu">model_parameters</span>(m_rgsuc_zi)</span></code></pre></div>
+<div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb65-1"><a href="RGsuc.html#cb65-1" tabindex="-1"></a><span class="fu">model_parameters</span>(m_rgsuc_zi)</span></code></pre></div>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["Parameter"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Component"],"name":[2],"type":["chr"],"align":["left"]},{"label":["Median"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["CI"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["CI_low"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["CI_high"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["pd"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["Rhat"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["ESS"],"name":[9],"type":["dbl"],"align":["right"]}],"data":[{"1":"b_Intercept","2":"conditional","3":"1.7060400","4":"0.95","5":"1.5176477","6":"1.910240500","7":"1.0000","8":"1.0004287","9":"6088.300"},{"1":"b_study_periodm19","2":"conditional","3":"-0.2514180","4":"0.95","5":"-0.5038939","6":"-0.007460219","7":"0.9778","8":"0.9999592","9":"8415.939"},{"1":"b_study_periodm20","2":"conditional","3":"-0.1127000","4":"0.95","5":"-0.3489820","6":"0.131834050","7":"0.8142","8":"1.0000145","9":"6879.432"},{"1":"b_study_periodm21","2":"conditional","3":"-0.0840687","4":"0.95","5":"-0.3090323","6":"0.142678025","7":"0.7666","8":"1.0005239","9":"6511.198"},{"1":"b_zi_Intercept","2":"zero_inflated","3":"-4.7361400","4":"0.95","5":"-8.3630430","6":"-2.948429000","7":"1.0000","8":"0.9997731","9":"5379.755"},{"1":"shape","2":"distributional","3":"0.2790350","4":"0.95","5":"0.2588695","6":"0.306335725","7":"1.0000","8":"1.0000303","9":"7042.510"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
@@ -331,7 +336,7 @@ div.csl-indent {
 </div>
 <p><br/></p>
 <p><strong>負の二項分布モデル</strong></p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="RGsuc.html#cb62-1" tabindex="-1"></a><span class="fu">model_parameters</span>(m_rgsuc_nb)</span></code></pre></div>
+<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb66-1"><a href="RGsuc.html#cb66-1" tabindex="-1"></a><span class="fu">model_parameters</span>(m_rgsuc_nb)</span></code></pre></div>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["Parameter"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Component"],"name":[2],"type":["chr"],"align":["left"]},{"label":["Median"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["CI"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["CI_low"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["CI_high"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["pd"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["Rhat"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["ESS"],"name":[9],"type":["dbl"],"align":["right"]}],"data":[{"1":"b_Intercept","2":"conditional","3":"1.6910650","4":"0.95","5":"1.4934392","6":"1.889932500","7":"1.0000","8":"0.9999818","9":"5889.160"},{"1":"b_study_periodm19","2":"conditional","3":"-0.2533910","4":"0.95","5":"-0.4977100","6":"-0.003634888","7":"0.9765","8":"1.0004831","9":"9068.417"},{"1":"b_study_periodm20","2":"conditional","3":"-0.1144130","4":"0.95","5":"-0.3591290","6":"0.128570500","7":"0.8227","8":"1.0002463","9":"7153.465"},{"1":"b_study_periodm21","2":"conditional","3":"-0.0862560","4":"0.95","5":"-0.3153166","6":"0.139571225","7":"0.7787","8":"1.0001254","9":"6484.457"},{"1":"shape","2":"distributional","3":"0.2712495","4":"0.95","5":"0.2540535","6":"0.289999075","7":"1.0000","8":"1.0003711","9":"12525.657"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
@@ -343,12 +348,12 @@ div.csl-indent {
 <div id="モデル比較" class="section level3 hasAnchor" number="4.2.2">
 <h3><span class="header-section-number">4.2.2</span> モデル比較<a href="RGsuc.html#モデル比較" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>それでは、どちらのモデルの予測性がより優れているかをモデル比較で検討する。モデル比較にはWAICを用いている。</p>
-<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="RGsuc.html#cb63-1" tabindex="-1"></a>loo_rgsuc_zi <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(m_rgsuc_zi, <span class="at">criterion =</span> <span class="st">&quot;waic&quot;</span>)</span>
-<span id="cb63-2"><a href="RGsuc.html#cb63-2" tabindex="-1"></a>loo_rgsuc_nb <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(m_rgsuc_nb, <span class="at">criterion =</span> <span class="st">&quot;waic&quot;</span>)</span>
-<span id="cb63-3"><a href="RGsuc.html#cb63-3" tabindex="-1"></a></span>
-<span id="cb63-4"><a href="RGsuc.html#cb63-4" tabindex="-1"></a>loo_comp <span class="ot">&lt;-</span> <span class="fu">loo_compare</span>(loo_rgsuc_zi, loo_rgsuc_nb, <span class="at">criterion =</span> <span class="st">&quot;waic&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="RGsuc.html#cb67-1" tabindex="-1"></a>loo_rgsuc_zi <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(m_rgsuc_zi, <span class="at">criterion =</span> <span class="st">&quot;waic&quot;</span>)</span>
+<span id="cb67-2"><a href="RGsuc.html#cb67-2" tabindex="-1"></a>loo_rgsuc_nb <span class="ot">&lt;-</span> <span class="fu">add_criterion</span>(m_rgsuc_nb, <span class="at">criterion =</span> <span class="st">&quot;waic&quot;</span>)</span>
+<span id="cb67-3"><a href="RGsuc.html#cb67-3" tabindex="-1"></a></span>
+<span id="cb67-4"><a href="RGsuc.html#cb67-4" tabindex="-1"></a>loo_comp <span class="ot">&lt;-</span> <span class="fu">loo_compare</span>(loo_rgsuc_zi, loo_rgsuc_nb, <span class="at">criterion =</span> <span class="st">&quot;waic&quot;</span>)</span></code></pre></div>
 <p>モデル比較の観点からも、ゼロ過剰モデルよりも負の二項分布モデルの方が予測がうまくできることが分かった。</p>
-<div class="sourceCode" id="cb64"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb64-1"><a href="RGsuc.html#cb64-1" tabindex="-1"></a><span class="fu">print</span>(loo_comp, <span class="at">simplify =</span> F)</span></code></pre></div>
+<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb68-1"><a href="RGsuc.html#cb68-1" tabindex="-1"></a><span class="fu">print</span>(loo_comp, <span class="at">simplify =</span> F)</span></code></pre></div>
 <pre><code>##              elpd_diff se_diff elpd_waic se_elpd_waic p_waic  se_p_waic waic   
 ## loo_rgsuc_nb     0.0       0.0 -6253.1      90.3         14.7     1.4   12506.2
 ## loo_rgsuc_zi    -1.0       0.5 -6254.1      90.3         15.9     1.4   12508.3
@@ -359,79 +364,77 @@ div.csl-indent {
 </div>
 <div id="モデルからの予測値と実データの比較" class="section level3 hasAnchor" number="4.2.3">
 <h3><span class="header-section-number">4.2.3</span> モデルからの予測値と実データの比較。<a href="RGsuc.html#モデルからの予測値と実データの比較" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb66-1"><a href="RGsuc.html#cb66-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb66-2"><a href="RGsuc.html#cb66-2" tabindex="-1"></a></span>
-<span id="cb66-3"><a href="RGsuc.html#cb66-3" tabindex="-1"></a><span class="fu">coef</span>(m_rgsuc_zi) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-4"><a href="RGsuc.html#cb66-4" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb66-5"><a href="RGsuc.html#cb66-5" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">9</span>,<span class="dv">13</span>,<span class="dv">17</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-6"><a href="RGsuc.html#cb66-6" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">In =</span> <span class="dv">1</span>, <span class="at">ziIn =</span> <span class="dv">2</span>, <span class="at">m19 =</span> <span class="dv">3</span>, <span class="at">m20 =</span> <span class="dv">4</span>, <span class="at">m21 =</span> <span class="dv">5</span>)  <span class="sc">%&gt;%</span> </span>
-<span id="cb66-7"><a href="RGsuc.html#cb66-7" tabindex="-1"></a>  <span class="fu">bind_cols</span>(<span class="fu">data.frame</span>(<span class="at">m18 =</span> <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">18</span>))) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-8"><a href="RGsuc.html#cb66-8" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">&quot;subject&quot;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-9"><a href="RGsuc.html#cb66-9" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(m19<span class="sc">:</span>m18, <span class="at">values_to =</span> <span class="st">&quot;coef&quot;</span>, <span class="at">names_to =</span> <span class="st">&quot;study_period&quot;</span>)　<span class="ot">-&gt;</span> coef_zi</span>
-<span id="cb66-10"><a href="RGsuc.html#cb66-10" tabindex="-1"></a></span>
-<span id="cb66-11"><a href="RGsuc.html#cb66-11" tabindex="-1"></a>N_suc <span class="sc">%&gt;%</span> </span>
-<span id="cb66-12"><a href="RGsuc.html#cb66-12" tabindex="-1"></a>  <span class="fu">select</span>(subject, study_period) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-13"><a href="RGsuc.html#cb66-13" tabindex="-1"></a>  <span class="fu">left_join</span>(coef_zi, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;subject&quot;</span>, <span class="st">&quot;study_period&quot;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-14"><a href="RGsuc.html#cb66-14" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prob =</span> <span class="fu">inv_logit_scaled</span>(ziIn)) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-15"><a href="RGsuc.html#cb66-15" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">onezero =</span> <span class="fu">ifelse</span>(<span class="fu">rbernoulli</span>(<span class="fu">nrow</span>(N_suc),prob),<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-16"><a href="RGsuc.html#cb66-16" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mu =</span> <span class="fu">exp</span>(In <span class="sc">+</span> coef)) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-17"><a href="RGsuc.html#cb66-17" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">N =</span> onezero<span class="sc">*</span><span class="fu">rnbinom</span>(<span class="fu">nrow</span>(N_suc), <span class="at">mu =</span> <span class="fu">exp</span>(In <span class="sc">+</span> coef),<span class="at">size =</span> <span class="fu">posterior_summary</span>(m_rgsuc_zi)[<span class="dv">8</span>,<span class="dv">1</span>])) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-18"><a href="RGsuc.html#cb66-18" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> N ))<span class="sc">+</span></span>
-<span id="cb66-19"><a href="RGsuc.html#cb66-19" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">1</span>,</span>
-<span id="cb66-20"><a href="RGsuc.html#cb66-20" tabindex="-1"></a>                 <span class="at">fill  =</span> <span class="st">&quot;red3&quot;</span>,</span>
-<span id="cb66-21"><a href="RGsuc.html#cb66-21" tabindex="-1"></a>                 <span class="at">alpha =</span> <span class="fl">0.3</span>)<span class="sc">+</span></span>
-<span id="cb66-22"><a href="RGsuc.html#cb66-22" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">data =</span> N_suc <span class="sc">%&gt;%</span> </span>
-<span id="cb66-23"><a href="RGsuc.html#cb66-23" tabindex="-1"></a>  <span class="fu">group_by</span>(N_minus) <span class="sc">%&gt;%</span> </span>
-<span id="cb66-24"><a href="RGsuc.html#cb66-24" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">num =</span> <span class="fu">n</span>()),</span>
-<span id="cb66-25"><a href="RGsuc.html#cb66-25" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x =</span> N_minus, <span class="at">y =</span> num),</span>
-<span id="cb66-26"><a href="RGsuc.html#cb66-26" tabindex="-1"></a>  <span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
-<span id="cb66-27"><a href="RGsuc.html#cb66-27" tabindex="-1"></a>  <span class="fu">theme_bw</span>()<span class="sc">+</span></span>
-<span id="cb66-28"><a href="RGsuc.html#cb66-28" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand=</span> <span class="fu">c</span>(<span class="fl">0.01</span>,<span class="dv">0</span>))<span class="sc">+</span></span>
-<span id="cb66-29"><a href="RGsuc.html#cb66-29" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">aspect.ratio =</span> <span class="fl">0.8</span>)<span class="sc">+</span></span>
-<span id="cb66-30"><a href="RGsuc.html#cb66-30" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;zero-inflated model&quot;</span>,</span>
-<span id="cb66-31"><a href="RGsuc.html#cb66-31" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&quot;N-1&quot;</span>) <span class="ot">-&gt;</span> p_zi</span></code></pre></div>
-<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="RGsuc.html#cb67-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb67-2"><a href="RGsuc.html#cb67-2" tabindex="-1"></a></span>
-<span id="cb67-3"><a href="RGsuc.html#cb67-3" tabindex="-1"></a><span class="fu">coef</span>(m_rgsuc_nb) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-4"><a href="RGsuc.html#cb67-4" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb67-5"><a href="RGsuc.html#cb67-5" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">9</span>,<span class="dv">13</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-6"><a href="RGsuc.html#cb67-6" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">In =</span> <span class="dv">1</span>,  <span class="at">m19 =</span> <span class="dv">2</span>, <span class="at">m20 =</span> <span class="dv">3</span>, <span class="at">m21 =</span> <span class="dv">4</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-7"><a href="RGsuc.html#cb67-7" tabindex="-1"></a>  <span class="fu">bind_cols</span>(<span class="fu">data.frame</span>(<span class="at">m18 =</span> <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">18</span>))) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-8"><a href="RGsuc.html#cb67-8" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">&quot;subject&quot;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-9"><a href="RGsuc.html#cb67-9" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(m19<span class="sc">:</span>m18, <span class="at">values_to =</span> <span class="st">&quot;coef&quot;</span>, <span class="at">names_to =</span> <span class="st">&quot;study_period&quot;</span>)<span class="ot">-&gt;</span> coef_nb</span>
-<span id="cb67-10"><a href="RGsuc.html#cb67-10" tabindex="-1"></a></span>
-<span id="cb67-11"><a href="RGsuc.html#cb67-11" tabindex="-1"></a>N_suc <span class="sc">%&gt;%</span> </span>
-<span id="cb67-12"><a href="RGsuc.html#cb67-12" tabindex="-1"></a>  <span class="fu">select</span>(subject, study_period) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-13"><a href="RGsuc.html#cb67-13" tabindex="-1"></a>  <span class="fu">left_join</span>(coef_nb, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;subject&quot;</span>, <span class="st">&quot;study_period&quot;</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-14"><a href="RGsuc.html#cb67-14" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">N =</span> <span class="fu">rnbinom</span>(<span class="fu">nrow</span>(N_suc), <span class="at">mu =</span> <span class="fu">exp</span>(In <span class="sc">+</span> coef), <span class="at">size =</span> <span class="fu">posterior_summary</span>(m_rgsuc_nb)[<span class="dv">6</span>,<span class="dv">1</span>])) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-15"><a href="RGsuc.html#cb67-15" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> N )) <span class="sc">+</span></span>
-<span id="cb67-16"><a href="RGsuc.html#cb67-16" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">1</span>,</span>
-<span id="cb67-17"><a href="RGsuc.html#cb67-17" tabindex="-1"></a>                 <span class="at">fill  =</span> <span class="st">&quot;red3&quot;</span>,</span>
-<span id="cb67-18"><a href="RGsuc.html#cb67-18" tabindex="-1"></a>                 <span class="at">alpha =</span> <span class="fl">0.3</span>)<span class="sc">+</span></span>
-<span id="cb67-19"><a href="RGsuc.html#cb67-19" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">data =</span> N_suc <span class="sc">%&gt;%</span> </span>
-<span id="cb67-20"><a href="RGsuc.html#cb67-20" tabindex="-1"></a>  <span class="fu">group_by</span>(N_minus) <span class="sc">%&gt;%</span> </span>
-<span id="cb67-21"><a href="RGsuc.html#cb67-21" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">num =</span> <span class="fu">n</span>()),</span>
-<span id="cb67-22"><a href="RGsuc.html#cb67-22" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x =</span> N_minus, <span class="at">y =</span> num),</span>
-<span id="cb67-23"><a href="RGsuc.html#cb67-23" tabindex="-1"></a>  <span class="at">alpha =</span> <span class="fl">0.7</span>)<span class="sc">+</span></span>
-<span id="cb67-24"><a href="RGsuc.html#cb67-24" tabindex="-1"></a>  <span class="fu">theme_bw</span>()<span class="sc">+</span></span>
-<span id="cb67-25"><a href="RGsuc.html#cb67-25" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand=</span> <span class="fu">c</span>(<span class="fl">0.01</span>,<span class="dv">0</span>))<span class="sc">+</span></span>
-<span id="cb67-26"><a href="RGsuc.html#cb67-26" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">aspect.ratio =</span> <span class="fl">0.8</span>)<span class="sc">+</span></span>
-<span id="cb67-27"><a href="RGsuc.html#cb67-27" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;negative binomial model&quot;</span>,</span>
-<span id="cb67-28"><a href="RGsuc.html#cb67-28" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&quot;N-1&quot;</span>) <span class="ot">-&gt;</span> p_nb</span></code></pre></div>
-<p>各モデルから予測された値の分布と、実データの分布を比較したのが図<a href="#fig:fig-res"><strong>??</strong></a>である。灰色バーが実データで、赤いバーがモデルから予測された値である。<br />
+<div class="sourceCode" id="cb70"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb70-1"><a href="RGsuc.html#cb70-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb70-2"><a href="RGsuc.html#cb70-2" tabindex="-1"></a></span>
+<span id="cb70-3"><a href="RGsuc.html#cb70-3" tabindex="-1"></a><span class="fu">coef</span>(m_rgsuc_zi) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-4"><a href="RGsuc.html#cb70-4" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb70-5"><a href="RGsuc.html#cb70-5" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">9</span>,<span class="dv">13</span>,<span class="dv">17</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-6"><a href="RGsuc.html#cb70-6" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">In =</span> <span class="dv">1</span>, <span class="at">ziIn =</span> <span class="dv">2</span>, <span class="at">m19 =</span> <span class="dv">3</span>, <span class="at">m20 =</span> <span class="dv">4</span>, <span class="at">m21 =</span> <span class="dv">5</span>)  <span class="sc">%&gt;%</span> </span>
+<span id="cb70-7"><a href="RGsuc.html#cb70-7" tabindex="-1"></a>  <span class="fu">bind_cols</span>(<span class="fu">data.frame</span>(<span class="at">m18 =</span> <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">18</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-8"><a href="RGsuc.html#cb70-8" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">&quot;subject&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-9"><a href="RGsuc.html#cb70-9" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(m19<span class="sc">:</span>m18, <span class="at">values_to =</span> <span class="st">&quot;coef&quot;</span>, <span class="at">names_to =</span> <span class="st">&quot;study_period&quot;</span>)　<span class="ot">-&gt;</span> coef_zi</span>
+<span id="cb70-10"><a href="RGsuc.html#cb70-10" tabindex="-1"></a></span>
+<span id="cb70-11"><a href="RGsuc.html#cb70-11" tabindex="-1"></a>N_suc <span class="sc">%&gt;%</span> </span>
+<span id="cb70-12"><a href="RGsuc.html#cb70-12" tabindex="-1"></a>  <span class="fu">select</span>(subject, study_period) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-13"><a href="RGsuc.html#cb70-13" tabindex="-1"></a>  <span class="fu">left_join</span>(coef_zi, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;subject&quot;</span>, <span class="st">&quot;study_period&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-14"><a href="RGsuc.html#cb70-14" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prob =</span> <span class="fu">inv_logit_scaled</span>(ziIn)) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-15"><a href="RGsuc.html#cb70-15" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">onezero =</span> <span class="fu">ifelse</span>(<span class="fu">rbernoulli</span>(<span class="fu">nrow</span>(N_suc),prob),<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-16"><a href="RGsuc.html#cb70-16" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mu =</span> <span class="fu">exp</span>(In <span class="sc">+</span> coef)) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-17"><a href="RGsuc.html#cb70-17" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">N =</span> onezero<span class="sc">*</span><span class="fu">rnbinom</span>(<span class="fu">nrow</span>(N_suc), <span class="at">mu =</span> <span class="fu">exp</span>(In <span class="sc">+</span> coef),<span class="at">size =</span> <span class="fu">posterior_summary</span>(m_rgsuc_zi)[<span class="dv">8</span>,<span class="dv">1</span>])) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-18"><a href="RGsuc.html#cb70-18" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> N ))<span class="sc">+</span></span>
+<span id="cb70-19"><a href="RGsuc.html#cb70-19" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">1</span>,</span>
+<span id="cb70-20"><a href="RGsuc.html#cb70-20" tabindex="-1"></a>                 <span class="at">fill  =</span> <span class="st">&quot;red3&quot;</span>,</span>
+<span id="cb70-21"><a href="RGsuc.html#cb70-21" tabindex="-1"></a>                 <span class="at">alpha =</span> <span class="fl">0.3</span>)<span class="sc">+</span></span>
+<span id="cb70-22"><a href="RGsuc.html#cb70-22" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">data =</span> N_suc <span class="sc">%&gt;%</span> </span>
+<span id="cb70-23"><a href="RGsuc.html#cb70-23" tabindex="-1"></a>  <span class="fu">group_by</span>(N_minus) <span class="sc">%&gt;%</span> </span>
+<span id="cb70-24"><a href="RGsuc.html#cb70-24" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">num =</span> <span class="fu">n</span>()),</span>
+<span id="cb70-25"><a href="RGsuc.html#cb70-25" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x =</span> N_minus, <span class="at">y =</span> num),</span>
+<span id="cb70-26"><a href="RGsuc.html#cb70-26" tabindex="-1"></a>  <span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb70-27"><a href="RGsuc.html#cb70-27" tabindex="-1"></a>  <span class="fu">theme_bw</span>()<span class="sc">+</span></span>
+<span id="cb70-28"><a href="RGsuc.html#cb70-28" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand=</span> <span class="fu">c</span>(<span class="fl">0.01</span>,<span class="dv">0</span>))<span class="sc">+</span></span>
+<span id="cb70-29"><a href="RGsuc.html#cb70-29" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">aspect.ratio =</span> <span class="fl">0.8</span>)<span class="sc">+</span></span>
+<span id="cb70-30"><a href="RGsuc.html#cb70-30" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;zero-inflated model&quot;</span>,</span>
+<span id="cb70-31"><a href="RGsuc.html#cb70-31" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&quot;N-1&quot;</span>) <span class="ot">-&gt;</span> p_zi</span></code></pre></div>
+<div class="sourceCode" id="cb71"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb71-1"><a href="RGsuc.html#cb71-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb71-2"><a href="RGsuc.html#cb71-2" tabindex="-1"></a></span>
+<span id="cb71-3"><a href="RGsuc.html#cb71-3" tabindex="-1"></a><span class="fu">coef</span>(m_rgsuc_nb) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-4"><a href="RGsuc.html#cb71-4" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb71-5"><a href="RGsuc.html#cb71-5" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">9</span>,<span class="dv">13</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-6"><a href="RGsuc.html#cb71-6" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">In =</span> <span class="dv">1</span>,  <span class="at">m19 =</span> <span class="dv">2</span>, <span class="at">m20 =</span> <span class="dv">3</span>, <span class="at">m21 =</span> <span class="dv">4</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-7"><a href="RGsuc.html#cb71-7" tabindex="-1"></a>  <span class="fu">bind_cols</span>(<span class="fu">data.frame</span>(<span class="at">m18 =</span> <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">18</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-8"><a href="RGsuc.html#cb71-8" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">&quot;subject&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-9"><a href="RGsuc.html#cb71-9" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(m19<span class="sc">:</span>m18, <span class="at">values_to =</span> <span class="st">&quot;coef&quot;</span>, <span class="at">names_to =</span> <span class="st">&quot;study_period&quot;</span>)<span class="ot">-&gt;</span> coef_nb</span>
+<span id="cb71-10"><a href="RGsuc.html#cb71-10" tabindex="-1"></a></span>
+<span id="cb71-11"><a href="RGsuc.html#cb71-11" tabindex="-1"></a>N_suc <span class="sc">%&gt;%</span> </span>
+<span id="cb71-12"><a href="RGsuc.html#cb71-12" tabindex="-1"></a>  <span class="fu">select</span>(subject, study_period) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-13"><a href="RGsuc.html#cb71-13" tabindex="-1"></a>  <span class="fu">left_join</span>(coef_nb, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;subject&quot;</span>, <span class="st">&quot;study_period&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-14"><a href="RGsuc.html#cb71-14" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">N =</span> <span class="fu">rnbinom</span>(<span class="fu">nrow</span>(N_suc), <span class="at">mu =</span> <span class="fu">exp</span>(In <span class="sc">+</span> coef), <span class="at">size =</span> <span class="fu">posterior_summary</span>(m_rgsuc_nb)[<span class="dv">6</span>,<span class="dv">1</span>])) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-15"><a href="RGsuc.html#cb71-15" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> N )) <span class="sc">+</span></span>
+<span id="cb71-16"><a href="RGsuc.html#cb71-16" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">1</span>,</span>
+<span id="cb71-17"><a href="RGsuc.html#cb71-17" tabindex="-1"></a>                 <span class="at">fill  =</span> <span class="st">&quot;red3&quot;</span>,</span>
+<span id="cb71-18"><a href="RGsuc.html#cb71-18" tabindex="-1"></a>                 <span class="at">alpha =</span> <span class="fl">0.3</span>)<span class="sc">+</span></span>
+<span id="cb71-19"><a href="RGsuc.html#cb71-19" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">data =</span> N_suc <span class="sc">%&gt;%</span> </span>
+<span id="cb71-20"><a href="RGsuc.html#cb71-20" tabindex="-1"></a>  <span class="fu">group_by</span>(N_minus) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-21"><a href="RGsuc.html#cb71-21" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">num =</span> <span class="fu">n</span>()),</span>
+<span id="cb71-22"><a href="RGsuc.html#cb71-22" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x =</span> N_minus, <span class="at">y =</span> num),</span>
+<span id="cb71-23"><a href="RGsuc.html#cb71-23" tabindex="-1"></a>  <span class="at">alpha =</span> <span class="fl">0.7</span>)<span class="sc">+</span></span>
+<span id="cb71-24"><a href="RGsuc.html#cb71-24" tabindex="-1"></a>  <span class="fu">theme_bw</span>()<span class="sc">+</span></span>
+<span id="cb71-25"><a href="RGsuc.html#cb71-25" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">expand=</span> <span class="fu">c</span>(<span class="fl">0.01</span>,<span class="dv">0</span>))<span class="sc">+</span></span>
+<span id="cb71-26"><a href="RGsuc.html#cb71-26" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">aspect.ratio =</span> <span class="fl">0.8</span>)<span class="sc">+</span></span>
+<span id="cb71-27"><a href="RGsuc.html#cb71-27" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;negative binomial model&quot;</span>,</span>
+<span id="cb71-28"><a href="RGsuc.html#cb71-28" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&quot;N-1&quot;</span>) <span class="ot">-&gt;</span> p_nb</span></code></pre></div>
+<p>各モデルから予測された値の分布と、実データの分布を比較したのが図<a href="RGsuc.html#fig:fig-res">4.2</a>である。灰色バーが実データで、赤いバーがモデルから予測された値である。<br />
 グラフを見ると、ゼロ過剰モデルを用いなくてもモデルからの予測値が実データとうまくマッチしていることが分かる。つまり、このアプローチでは短時間の休息とそのほかの休息を区別することはできなかった。</p>
-<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb68-1"><a href="RGsuc.html#cb68-1" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
-<span id="cb68-2"><a href="RGsuc.html#cb68-2" tabindex="-1"></a></span>
-<span id="cb68-3"><a href="RGsuc.html#cb68-3" tabindex="-1"></a>p_rgsuc <span class="ot">&lt;-</span> p_zi <span class="sc">+</span> p_nb</span>
-<span id="cb68-4"><a href="RGsuc.html#cb68-4" tabindex="-1"></a></span>
-<span id="cb68-5"><a href="RGsuc.html#cb68-5" tabindex="-1"></a>p_rgsuc</span></code></pre></div>
-<div class="figure" style="text-align: center"><span style="display:block;" id="fig:mod-res"></span>
-<img src="Cohesion_files/figure-html/mod-res-1.png" alt="実データと各モデルの予測値の比較" width="1344" />
+<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb72-1"><a href="RGsuc.html#cb72-1" tabindex="-1"></a>p_rgsuc <span class="ot">&lt;-</span> p_zi <span class="sc">+</span> p_nb</span>
+<span id="cb72-2"><a href="RGsuc.html#cb72-2" tabindex="-1"></a></span>
+<span id="cb72-3"><a href="RGsuc.html#cb72-3" tabindex="-1"></a>p_rgsuc</span></code></pre></div>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig-res"></span>
+<img src="Cohesion_files/figure-html/fig-res-1.png" alt="実データと各モデルの予測値の比較" width="1344" />
 <p class="caption">
 図4.2: 実データと各モデルの予測値の比較
 </p>
 </div>
-<div class="sourceCode" id="cb69"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb69-1"><a href="RGsuc.html#cb69-1" tabindex="-1"></a><span class="co"># ggsave(&quot;figure/p_rgsuc.png&quot;, width = 220, height = 110, dpi = 600, units = &quot;mm&quot;)</span></span></code></pre></div>
+<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="RGsuc.html#cb73-1" tabindex="-1"></a><span class="co"># ggsave(&quot;figure/p_rgsuc.png&quot;, width = 220, height = 110, dpi = 600, units = &quot;mm&quot;)</span></span></code></pre></div>
 
 </div>
 </div>

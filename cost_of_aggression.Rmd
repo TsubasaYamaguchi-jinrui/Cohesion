@@ -561,7 +561,7 @@ model_parameters(m_agginj2)
 **群れオス**  
 ```{r}
 nd_agginj_tm <- crossing(rate_agg_tm = seq(0,2,length.out =100),
-                       rate_agg_ntm = mean(agg_injury$rate_agg_ntm),
+                       rate_agg_ntm = mean(agg_injury_ntm$rate_agg_ntm),
                        study_period = c("m18","m19","m20","m21"),
                        rs2 = c(0,1))
 
@@ -571,7 +571,7 @@ fit_agginj_tm <- fitted(m_agginj,
                bind_cols(nd_agginj_tm)
 
 
-agg_injury %>% 
+agg_injury_ntm %>% 
   ggplot(aes(x = rate_agg_tm, y = injury01, color = study_period))+
   geom_point(shape = "|", size = 3)+
   geom_line(data = fit_agginj_tm,
@@ -596,7 +596,7 @@ agg_injury %>%
 **群れ外オス**  
 ```{r}
 nd_agginj_ntm <- crossing(rate_agg_ntm = seq(0,1,length.out =100),
-                       rate_agg_tm = mean(agg_injury$rate_agg_tm),
+                       rate_agg_tm = mean(agg_injury_ntm$rate_agg_tm),
                        study_period = c("m18","m19","m20","m21"),
                        rs2 = c(0,1))
 
@@ -606,7 +606,7 @@ fit_agginj_ntm <- fitted(m_agginj,
                bind_cols(nd_agginj_ntm)
 
 
-agg_injury %>% 
+agg_injury_ntm %>% 
   ggplot(aes(x = rate_agg_ntm, y = injury01, color = study_period))+
   geom_point(shape = "|", size = 3)+
   geom_line(data = fit_agginj_ntm,

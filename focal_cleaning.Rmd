@@ -194,14 +194,19 @@ focal_raw_g %>%
 フォーカルが攻撃を受けた際の攻撃したオスのIDを表す列を作成する。  
 ```{r}
 focal_raw_g %>% 
-  mutate(aggressor_focal = ifelse(str_detect(victim1,subject) & str_detect(victim2,subject), str_c(aggressor1,",",aggressor2),
-                                  ifelse(!str_detect(victim1,subject) & str_detect(victim2, subject), aggressor2,
-                                         ifelse(str_detect(victim1,subject) & !str_detect(victim2, subject), aggressor1,"NA")))) %>% 
-  separate(aggressor_focal, into = c("aggressor_focal1","aggressor_focal2"), sep = ",") -> focal_raw_fin
+  replace_na(list(agg_focal = 0)) %>% 
+  replace_na(list(victim1 = "NA", victim2 = "NA", aggressor1 = "NA", aggressor2 = "NA")) %>% 
+  mutate(if_victim1 = ifelse(agg_focal == 1 & str_detect(victim1, subject),1,0),
+         if_victim2 = ifelse(agg_focal == 1 & str_detect(victim2, subject),1,0)) %>% 
+  mutate(aggressor_focal = ifelse(if_victim1 == 1 & if_victim2 == 1, str_c(aggressor1,",",aggressor2),
+                                  ifelse(if_victim1 == 1 , aggressor1,
+                                         ifelse(if_victim2 == 1, aggressor2,NA)))) %>% 
+  separate(aggressor_focal, into = c("aggressor_focal1","aggressor_focal2"), sep = ",")-> focal_raw_fin
 ```
 
 加工したデータは以下の通り。  
 ```{r}
 datatable(focal_raw_fin,
-          options = list(scrollX = 60))
+          options = list(scrollX = 60,
+                         filter = list(position = 'top')))
 ```
