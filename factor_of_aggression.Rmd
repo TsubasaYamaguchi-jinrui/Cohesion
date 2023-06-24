@@ -1,0 +1,302 @@
+# メスの被攻撃頻度はどのようなときに多くなるか  
+以下では、メスがオスから攻撃される頻度がどのような要因によって変化するのかを検討する。  
+
+## 個体追跡データによる分析  
+### データの加工  
+個体追跡の生データを加工する。メスの被攻撃頻度に関連する要因としては、以下のものを考える。2018年は群れ外オス数が確認できていないため、ここでは除外する。また、60分以上追跡できた個体追跡セッションのみを用いる。      
+
+- 追跡個体の発情の有無  
+- 観察日の群れ外オス数  
+- 観察日の発情メス数  
+- 観察時の*TY*の有無、*IT*の有無(2019~2020年のみ)   
+
+**群れオス・群れ外オスを区別せず**  
+```{r}
+focal_raw_fin %>% 
+  group_by(no_focal, subject, rs2, TY, IT) %>% 
+  summarise(no_agg1 = sum(if_victim1, na.rm = TRUE),
+            no_agg2 = sum(if_victim2, na.rm = TRUE),
+            dur = max(time),
+            no_ntm = mean(no_ntm, na.rm = TRUE),
+            no_est = mean(no_est, na.rm = TRUE),
+            study_period = unique(study_period)) %>% 
+  ungroup() %>% 
+  mutate(no_agg = no_agg1 + no_agg2) %>% 
+  select(-no_agg1, -no_agg2) %>% 
+  filter(study_period != "m18") %>% 
+  mutate(logdur = log(dur/60)) %>% 
+  replace_na(list(IT = 0)) %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE),
+         cen_est = no_est - mean(no_est, na.rm = TRUE),
+         std_ntm = standardize(no_ntm),
+         std_est = standardize(no_est)) -> focal_sum
+```
+
+まとめたものは以下の通り。  
+```{r}
+datatable(focal_sum,
+          options = list(scrollX = 10,
+                         filter = list(position = "top")))
+```
+<br/>  
+
+**群れオス・群れ外オスを区別**  
+```{r}
+focal_raw_fin %>% 
+  left_join(males, by = c("study_period", "aggressor_focal1" = "maleID")) %>% 
+  rename(ntm1 = ntm) %>% 
+  mutate(ntm1 = ifelse(is.na(aggressor_focal1),NA,
+                       ifelse(is.na(ntm1) & !is.na(aggressor_focal1),1,ntm1))) %>% 
+  left_join(males, by = c("study_period", "aggressor_focal2" = "maleID")) %>% 
+  rename(ntm2 = ntm) %>% 
+  mutate(ntm2 = ifelse(is.na(aggressor_focal2),NA,
+                       ifelse(is.na(ntm2) & !is.na(aggressor_focal2),1,ntm1))) -> focal_raw_fin_b
+  
+focal_raw_fin_b %>% 
+  filter(agg_focal == "1") -> a 
+  group_by(no_focal, subject, ntm1) %>% 
+  summarise(no_agg = sum(agg_focal, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = ntm1, values_from = no_agg) %>% 
+  rename(agg_tm1 = `0`, agg_ntm1 = `1`) %>% 
+  replace_na(list(agg_tm1 = 0, agg_ntm1 = 0))-> focal_list_ntm1
+
+focal_raw_fin_b %>% 
+  filter(agg_focal == "1" & !is.na(aggressor_focal2)) %>% 
+  group_by(no_focal, subject, ntm2) %>% 
+  summarise(no_agg = sum(agg_focal, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = ntm2, values_from = no_agg) %>% 
+  rename(agg_tm2 = `0`, agg_ntm2 = `1`) %>% 
+  replace_na(list(agg_tm2 = 0, agg_ntm2 = 0)) -> focal_list_ntm2
+
+left_join(focal_list_ntm1, focal_list_ntm2) %>% 
+  replace_na(list(agg_tm2 = 0, agg_ntm2 = 0)) %>% 
+  mutate(agg_tm = agg_tm1 + agg_tm2,
+         agg_ntm = agg_ntm1 + agg_ntm2) %>% 
+  select(-(agg_tm1:agg_ntm2)) %>% 
+  right_join(focal_sum) %>% 
+  replace_na(list(agg_tm = 0, agg_ntm = 0)) -> focal_sum_ntm
+```
+
+
+### 分析  
+#### 群れオスと群れ外オスの攻撃を区別しない  
+*IT*は2021年には群れから移出していなくなってしまっていたため、*IT*の有無を変数に含める場合には2019~2020年のデータのみを用いた。  
+
+##### モデリング(2019~2021年)  
+モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。    
+
+- 分布: 負の二項分布  
+- 応答変数: 被攻撃回数(`no_agg`)    
+- オフセット項: log(追跡時間)(`logdur`)    
+- 説明変数: 追跡個体の発情の有無(`rs2`)、観察日の群れ外オス数(`cen_ntm`)、発情メス数(`cen_est`)、発情の有無×群れ外オス数、発情の有無×発情メス数、*TY*の有無(`TY`)、*IT*の有無(`IT`: 2020~2021のモデルのみ)、調査期間(`study_period`)    
+- ランダム切片: 追跡個体ID  
+
+```{r}
+m_aggfocal <- brm(no_agg ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + study_period 
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum,
+                  file = "model/m_aggfocal.rds")
+```
+
+###### モデルチェック  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal <- dh_check_brms(m_aggfocal)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal)
+```
+
+###### 結果の確認  
+発情メス数と*TY*の有無が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。また、2021年は他の変数を統制したときに2019年より被攻撃頻度が低かったようだ。  
+```{r}
+model_parameters(m_aggfocal)
+```
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と正の関連があった。  
+```{r}
+estimate_slopes(m_aggfocal,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数については、発情の有無に限らず被攻撃頻度とは有意な関連がなかった。  
+```{r}
+estimate_slopes(m_aggfocal,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+#### 群れオス・群れ外オスを区別  
+```{r}
+m_aggfocal_tm <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_ntm:rs2 + TY + IT + study_period 
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm,
+                         file = "model/m_aggfocal_tm.rds")
+
+m_aggfocal_tm_est <- brm(agg_tm ~ cen_est  +  rs2 +  cen_est:rs2 + TY + study_period 
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm,
+                         file = "model/m_aggfocal_tm_est.rds")
+
+m_aggfocal_tm_ntm <- brm(agg_tm ~ cen_ntm  +  rs2 +  cen_ntm:rs2 + TY  + study_period 
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm,
+                  file = "model/m_aggfocal_tm_ntm.rds")
+```
+
+
+```{r}
+m_aggfocal_ntm <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est:rs2 + TY + study_period 
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm,
+                  file = "model/m_aggfocal_ntm.rds")
+```
+
+```{r, include = FALSE}
+check_m_aggfocal_tm <- dh_check_brms(m_aggfocal_tm_est)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_ntm)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal_ntm)
+```
+
+```{r}
+model_parameters(m_aggfocal_ntm)
+```
+
+```{r}
+estimate_slopes(m_aggfocal_ntm,
+                trend = "cen_est",
+                at = "rs2 = c(0,1)")
+```
+
+
+## 全生起サンプリングを用いた分析  
+### 群れオス・群れ外オスの攻撃を区別しない  
+
+#### データの加工  
+6歳以上のメスについて、各メスが確認された時刻から追跡終了までが300分以上のメスのデータのみを用いる。  
+```{r}
+female_dur %>% 
+  filter(!str_detect(study_period,"nm")) %>% 
+  left_join(agg_female_all, by = c("date","femaleID")) %>% 
+  replace_na(list(no_agg = 0)) %>% 
+  left_join(female_all, by = c("date", "femaleID")) %>% 
+  filter(dur >= 300) -> agg_female_all_b
+```
+
+観察日の群れ外オス数、発情メス数の情報を追加。  
+```{r}
+## 群れ外オス数  
+male_all %>% 
+  group_by(date) %>% 
+  filter(ntm == "1") %>% 
+  summarise(no_ntm= sum(presence)) %>% 
+  ungroup() %>% 
+  right_join(agg_female_all_b) ->
+  agg_female_all_c
+
+## 発情メス数  
+female_all %>% 
+  group_by(date) %>% 
+  summarise(no_est = sum(rs2, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  right_join(agg_female_all_c) -> agg_female_all_d
+```
+
+*TY*と*IT*の確認状況を追加する。なお、1時間以上確認できた日を1、1時間未満しか確認できていない日を0とした。  
+```{r}
+## 2018
+hr18 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2018mating/2018mating_raw.xlsx",
+              sheet =　"male_presence") %>% 
+        select(date,TY,IT)
+
+## 2019
+hr19 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019mating/2019mating_raw.xlsx",
+              sheet =　"male_presence_anal") %>% 
+        select(date,TY,IT)
+
+## 2020  
+hr20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
+              sheet =　"male_presence_anal") %>% 
+        select(date,TY,IT)
+
+## 2021  
+hr21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
+              sheet =　"male_presence_anal") %>% 
+        select(date,TY,IT)
+
+## 結合して加工
+bind_rows(hr18, hr19, hr20, hr21) %>% 
+  pivot_longer(cols = TY:IT)
+```
+
+

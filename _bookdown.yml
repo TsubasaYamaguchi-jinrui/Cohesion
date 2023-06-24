@@ -5,7 +5,8 @@ rmd_files:
   - Chapter1.Rmd 
   - focal_cleaning.Rmd
   - cost_of_aggression.Rmd  
-  - sessioninfo.Rmd
+  - RGsuc.Rmd  
+  - sessioninfo.Rmd  
 output_dir: "docs"  
 toc_depth: 4  
 language:

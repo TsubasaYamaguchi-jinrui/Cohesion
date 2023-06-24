@@ -1,107 +1,147 @@
----
-title: "Cohesion"
-author: "yamaguchi"
-date: "`r Sys.Date()`"
-output: 
-  rmdformats::readthedown:
-   df_print: "paged"
-   toc_depth: 4  
----
+# 休息は何分連続で行われる?  
+ニホンザルは、移動の間に数十秒程度の短い休息をとることがよくある。こうした短時間の休息を統計的に除くことはできるだろうか？  
+ここでは、ゼロ過剰モデルを用いることで一時的な休息とそれ以外の休息を区別できるのかを検討する。  
 
-本稿の目的は、
-
-```{r, echo = FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE,
-                      warning = FALSE, fig.align = "left")
-```
-
-# パッケージの読み込み  
+## データの加工  
+個体追跡データから、地上での休息が何回連続で起こっているのかを計算する。  
 ```{r}
-library(tidyverse)
-library(lubridate)
-library(DT)
-library(lemon)
-library(patchwork)
-library(extrafont)
-require(systemfonts)
-require(fontregisterer)
-library(survival)
-library(eha)
-library(flexsurv)
-library(coxme)
-library(survminer)
-library(ggsurvfit)
-library(lme4)
-library(brms)
-library(glmmTMB)
-library(DHARMa)
-library(easystats)
-library(rstan)
-rstan_options(auto_write = TRUE) 
-options(mc.cores = parallel::detectCores()) 
-```
-
-```{r}
-focal_data <- read_csv("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/combined_data/focal_combined_new.csv")
-```
-
-```{r}
-focal_data %>% 
-  mutate(RG = ifelse(activity %in% c("R","G") & TG == "G",1,0)) %>% 
-  group_by(no_focal, date, season, subject) %>% 
+focal_raw %>% 
+  mutate(RG = ifelse(activity %in% c("R","G") & T_G == "G",1,0)) %>% 
+  group_by(no_focal, date, study_period, subject) %>% 
   summarise(N = rle(RG)$lengths,
             RG = rle(RG)$values) %>% 
   filter(RG == "1") %>% 
   mutate(N_minus = N-1) %>% 
   ungroup()-> N_suc
+```
 
+連続した回数ごとの度数を示したのが以下の図である(図\@ref(fig:fig-Nsuc))。  
+```{r fig-Nsuc, fig.dim = c(7,5), fig.cap = "地上での休息が何回連続で続いたか"}
 N_suc %>% 
-  group_by(N_minus) %>% 
+  group_by(N) %>% 
   summarise(num = n()) %>% 
-  ggplot(aes(x = N_minus, y = num))+
+  ggplot(aes(x = N, y = num))+
   geom_col()+
   scale_x_continuous(breaks = seq(0,121,1))
 ```
 
-ゼロ過剰モデル  
-```{r}
-r <- brm(bf(N_minus ~ season +  (1|subject),
-         zi ~ 1 + (1|subject)),
-         family = zero_inflated_negbinomial(),
-         iter = 5000, warmup = 2500, seed = 13,
-         control=list(adapt_delta = 0.999, max_treedepth = 15),
-         backend = "cmdstanr",
-         data = N_suc,
-         file = "model/r.rds")
+## 分析  
+### モデリング  
+以下では、一時的な休息がそうでない休息に混ざっていると仮定するゼロ過剰モデルと、そうではないモデルをデータに適用する。なお、**ゼロ過剰モデルを適用するため、休息の連続回数から1を引く**。  
 
-r2 <- brm(N_minus ~ season +  (1|subject),
-         family = negbinomial,
-         iter = 5000, warmup = 2500, seed = 13,
-         control=list(adapt_delta = 0.999, max_treedepth = 15),
-         backend = "cmdstanr",
-         data = N_suc,
-         file = "model/r2.rds")
+いずれのモデルにも負の二項分布を適用した。ゼロ過剰モデルについては、[こちら](https://tsubasayamaguchi-jinrui.github.io/Zeroinflation/)を参照。      
+
+```{r}
+## ゼロ過剰モデル
+m_rgsuc_zi <- brm(bf(N_minus ~ study_period +  (1|subject),
+                  zi ~ 1 + (1|subject)),
+                  family = zero_inflated_negbinomial(),
+                  iter = 5000, warmup = 2500, seed = 13,
+                  control=list(adapt_delta = 0.999, max_treedepth = 15),
+                  backend = "cmdstanr",
+                  data = N_suc,
+                  file = "model/m_rgsuc_zi.rds")
+
+m_rgsuc_nb <- brm(N_minus ~ study_period +  (1|subject),
+                  family = negbinomial,
+                  iter = 5000, warmup = 2500, seed = 13,
+                  control=list(adapt_delta = 0.999, max_treedepth = 15),
+                  backend = "cmdstanr",
+                  data = N_suc,
+                  file = "model/m_rgsuc_nb.rds")
 ```
 
-```{r?}
+#### モデルチェック  
+```{r, include = FALSE}
+check_nb <- dh_check_brms(m_rgsuc_nb)
+```
+
+負の二項分布でもゼロ過剰にはなっていなかった。つまり、ゼロ過剰モデルを仮定しなくてもデータの0の多さを説明できているということである。  
+```{r}
+testZeroInflation(check_nb)
+```
+
+#### 結果の確認  
+**ゼロ過剰モデル**   
+推定されたゼロ過剰の切片は`r sprintf("%.2f",brms::posterior_summary(m_rgsuc_zi)[2,1])`である。これは、`r sprintf("%.2f",brms::inv_logit_scaled(brms::posterior_summary(m_rgsuc_zi)[2,1]))`でしか「偽物の」ゼロが含まれていないことを示している。  
+```{r}
+model_parameters(m_rgsuc_zi)
+```
+<br/>  
+
+**負の二項分布モデル**
+```{r}
+model_parameters(m_rgsuc_nb)
+```
+<br/>  
+
+### モデル比較  
+それでは、どちらのモデルの予測性がより優れているかをモデル比較で検討する。モデル比較にはWAICを用いている。  
+```{r}
+loo_rgsuc_zi <- add_criterion(m_rgsuc_zi, criterion = "waic")
+loo_rgsuc_nb <- add_criterion(m_rgsuc_nb, criterion = "waic")
+
+loo_comp <- loo_compare(loo_rgsuc_zi, loo_rgsuc_nb, criterion = "waic")
+```
+
+モデル比較の観点からも、ゼロ過剰モデルよりも負の二項分布モデルの方が予測がうまくできることが分かった。  
+```{r}
+print(loo_comp, simplify = F)
+```
+<br/>  
+
+### モデルからの予測値と実データの比較。  
+
+```{r}
 set.seed(123)
 
-coef(r) %>% 
+coef(m_rgsuc_zi) %>% 
+  data.frame() %>% 
+  select(1,5,9,13,17) %>% 
+  rename(In = 1, ziIn = 2, m19 = 3, m20 = 4, m21 = 5)  %>% 
+  bind_cols(data.frame(m18 = rep(0,18))) %>% 
+  rownames_to_column(var = "subject") %>% 
+  pivot_longer(m19:m18, values_to = "coef", names_to = "study_period")　-> coef_zi
+
+N_suc %>% 
+  select(subject, study_period) %>% 
+  left_join(coef_zi, by = c("subject", "study_period")) %>% 
+  mutate(prob = inv_logit_scaled(ziIn)) %>% 
+  mutate(onezero = ifelse(rbernoulli(nrow(N_suc),prob),0,1)) %>% 
+  mutate(mu = exp(In + coef)) %>% 
+  mutate(N = onezero*rnbinom(nrow(N_suc), mu = exp(In + coef),size = posterior_summary(m_rgsuc_zi)[8,1])) %>% 
+  ggplot(aes(x = N ))+
+  geom_histogram(binwidth = 1,
+                 fill  = "red3",
+                 alpha = 0.3)+
+  geom_col(data = N_suc %>% 
+  group_by(N_minus) %>% 
+  summarise(num = n()),
+  aes(x = N_minus, y = num),
+  alpha = 0.7) +
+  theme_bw()+
+  scale_y_continuous(expand= c(0.01,0))+
+  theme(aspect.ratio = 0.8)+
+  labs(title = "zero-inflated model",
+       x = "N-1") -> p_zi
+```
+
+```{r}
+set.seed(123)
+
+coef(m_rgsuc_nb) %>% 
   data.frame() %>% 
   select(1,5,9,13) %>% 
-  rename(In = 1, ziIn = 2, M8 = 3, M9 = 4) %>% 
-  bind_cols(data.frame(C9 = rep(0,18))) %>% 
+  rename(In = 1,  m19 = 2, m20 = 3, m21 = 4) %>% 
+  bind_cols(data.frame(m18 = rep(0,18))) %>% 
   rownames_to_column(var = "subject") %>% 
-  pivot_longer(M8:C9, values_to = "coef", names_to = "season")-> coefs
+  pivot_longer(m19:m18, values_to = "coef", names_to = "study_period")-> coef_nb
 
 N_suc %>% 
-  select(subject, season) %>% 
-  left_join(coefs, by = c("subject", "season")) %>% 
-  mutate(prob = inv_logit_scaled(ziIn)) %>% 
-  mutate(onezero = ifelse(rbernoulli(1383,prob),0,1)) %>% 
-  mutate(mu = exp(In + coef)) %>% 
-  mutate(N = onezero*rnbinom(1383, mu = exp(In + coef),size = posterior_summary(r)[7,1])) %>% 
-  ggplot(aes(x = N ))+
+  select(subject, study_period) %>% 
+  left_join(coef_nb, by = c("subject", "study_period")) %>% 
+  mutate(N = rnbinom(nrow(N_suc), mu = exp(In + coef), size = posterior_summary(m_rgsuc_nb)[6,1])) %>% 
+  ggplot(aes(x = N )) +
   geom_histogram(binwidth = 1,
                  fill  = "red3",
                  alpha = 0.3)+
@@ -109,45 +149,21 @@ N_suc %>%
   group_by(N_minus) %>% 
   summarise(num = n()),
   aes(x = N_minus, y = num),
-  alpha = 0.5) +
+  alpha = 0.7)+
   theme_bw()+
   scale_y_continuous(expand= c(0.01,0))+
-  theme(aspect.ratio = 0.8) -> p1
+  theme(aspect.ratio = 0.8)+
+  labs(title = "negative binomial model",
+       x = "N-1") -> p_nb
 ```
 
-```{r}
-set.seed(123)
+各モデルから予測された値の分布と、実データの分布を比較したのが図\@ref(fig:fig-res)である。灰色バーが実データで、赤いバーがモデルから予測された値である。  
+グラフを見ると、ゼロ過剰モデルを用いなくてもモデルからの予測値が実データとうまくマッチしていることが分かる。つまり、このアプローチでは短時間の休息とそのほかの休息を区別することはできなかった。  
 
-coef(r2) %>% 
-  data.frame() %>% 
-  select(1,5,9) %>% 
-  rename(In = 1,  M8 = 2, M9 = 3) %>% 
-  bind_cols(data.frame(C9 = rep(0,18))) %>% 
-  rownames_to_column(var = "subject") %>% 
-  pivot_longer(M8:C9, values_to = "coef", names_to = "season")-> coefs2
+```{r fig-res, fig.dim = c(14,6), fig.cap = "実データと各モデルの予測値の比較"}
+p_rgsuc <- p_zi + p_nb
 
-N_suc %>% 
-  select(subject, season) %>% 
-  left_join(coefs2, by = c("subject", "season")) %>% 
-  mutate(N = rnbinom(1383, mu = exp(In + coef), size = posterior_summary(r2)[5,1])) %>% 
-  ggplot(aes(x = N ))+
-  geom_histogram(binwidth = 1,
-                 fill  = "red3",
-                 alpha = 0.3)+
-  geom_col(data = N_suc %>% 
-  group_by(N_minus) %>% 
-  summarise(num = n()),
-  aes(x = N_minus, y = num),
-  alpha = 0.5)+
-  theme_bw()+
-  scale_y_continuous(expand= c(0.01,0))+
-  theme(aspect.ratio = 0.8) -> p2
+p_rgsuc
 
-p1 + p2
+# ggsave("figure/p_rgsuc.png", width = 220, height = 110, dpi = 600, units = "mm")
 ```
-
-
-
-
-
-

@@ -2,6 +2,8 @@ fig:fig-aggcomp
 fig:fig-injcomp
 fig:fig-agginj
 fig:fig-agginj-all
+fig:fig-Nsuc
+fig:mod-res
 使用する基礎データ
 データクリーニング
 データの読み込み
@@ -39,3 +41,11 @@ injcomp
 モデルチェック-3
 結果の確認-3
 結果の作図-1
+休息は何分連続で行われる
+データの加工-2
+分析-2
+モデリング-4
+モデルチェック-4
+結果の確認-4
+モデル比較
+モデルからの予測値と実データの比較

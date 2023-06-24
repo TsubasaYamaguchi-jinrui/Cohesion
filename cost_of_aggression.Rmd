@@ -11,10 +11,15 @@
 **交尾期**  
 ```{r}
 focal_list_m <- focal_raw_fin %>% 
+  mutate(if_victim1 = ifelse(agg_focal == "1" & str_detect(victim1, subject),1,0),
+         if_victim2 = ifelse(agg_focal == "1" & str_detect(victim2, subject),1,0)) %>% 
   group_by(no_focal, date, subject, study_period,rs2) %>% 
   summarise(duration = max(time),
-            no_agg = sum(agg_focal, na.rm = TRUE)) %>% 
-  ungroup()
+            no_agg1 = sum(if_victim1, na.rm = TRUE),
+            no_agg2 = sum(if_victim2, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(no_agg = no_agg1 + no_agg2) %>% 
+  select(-no_agg1, -no_agg2)
 ```
 
 **非交尾期**  
@@ -54,7 +59,8 @@ focal_list <- bind_rows(focal_list_m,focal_list19nm, focal_list21nm, focal_list2
 
 データは以下の通り。  
 ```{r}
-datatable(focal_list)
+datatable(focal_list,
+          options = list(scrollX = 20))
 ```
 <br/>  
 
@@ -117,6 +123,21 @@ estimate_contrasts(m_aggcomp,
 
 ###### 結果の図示  
 ```{r}
+posterior_samples(m_aggcomp) %>% 
+  select(1,2,3) %>% 
+  rename("est" = 1, "nm" = 2, "nonest" = 3) %>% 
+  tidyr::expand(data.frame(cat = c("est","nonest","nm")),
+         nesting(est, nm, nonest)) %>% 
+  mutate(lambda = ifelse(cat == "est", exp(est),
+                         ifelse(cat == "nonest", exp(est+ nonest),
+                                ifelse(cat == "nm", exp(est + nm),"NA")))) %>% 
+  mutate(lambda = as.numeric(lambda)) %>% 
+  group_by(cat) %>% 
+  summarise(Mean = mean(lambda),
+         CI_low = quantile(lambda, 0.025),
+         CI_high = quantile(lambda, 0.975)) -> mean_aggcomp
+  
+
 focal_list %>% 
   ungroup() %>% 
   mutate(cat = fct_relevel(cat,"nm","nonest","est")) %>% 
@@ -124,11 +145,20 @@ focal_list %>%
   geom_violin(scale = "width",
               fill = "grey65",
               color = "white",
-              bw = 0.2)+
+              bw = 0.23)+
   geom_boxplot(width = 0.3,
                size = 0.7,
                outlier.alpha = 0,
                fill = "grey42") +
+  geom_pointrange(data = mean_aggcomp,
+                aes(y = Mean, ymin = CI_low, ymax = CI_high),
+                color = "white",
+                size = 0.3)+
+  geom_errorbar(data = mean_aggcomp,
+                aes(y = Mean, ymin = CI_low, ymax = CI_high),
+                width = 0.1,
+                linewidth = 0.8,
+                color = "white")+
   geom_signif(comparisons = list(c("nm","nonest")),
               y_position = 2.1,
               annotation = "***") +
@@ -244,7 +274,8 @@ injury_fin %>%
 
 データは以下の通り。  
 ```{r}
-datatable(injury_long)
+datatable(injury_long,
+          options = list(scrollX = 20))
 ```
 
 #### 分析  
@@ -264,8 +295,8 @@ m_injcomp <- brm(no_inj|trials(N) ~ cat  + (1|femaleID) + (1|study_period),
                  iter = 5000, warmup = 2500, seed = 13,
                  prior = c(prior(student_t(4,0,10), class = "b"),
                            prior(student_t(4,0,10), class = "Intercept"),
-                           prior(student_t(4,0,5), class = "sd")),
-                 control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                           prior(student_t(3,0,4), class = "sd")),
+                 control=list(adapt_delta = 0.9999, max_treedepth = 22),
                  backend = "cmdstanr",
                  data = injury_long,
                  file = "model/m_injcomp.rds")
@@ -323,7 +354,7 @@ injury_long %>%
   geom_violin(scale = "width",
               fill = "grey65",
               color = "white",
-              bw = 0.05)+
+              bw = 0.043)+
   geom_boxplot(width = 0.4,
                size = 0.7,
                outlier.alpha = 0,
@@ -453,7 +484,9 @@ injury_fin %>%
   replace_na(list(agg_tm = 0, agg_ntm = 0)) %>% 
   ## 被攻撃頻度を算出  
   mutate(rate_agg_tm = agg_tm*60/duration,
-         rate_agg_ntm = agg_ntm*60/duration) -> agg_injury_ntm
+         rate_agg_ntm = agg_ntm*60/duration,
+         rate_agg_tm2 = agg_tm*60/dur,
+         rate_agg_ntm2 = agg_ntm*60/dur) -> agg_injury_ntm
 ```
 
 ### 分析1 (群れオス・群れ外オスを区別)             
@@ -464,11 +497,12 @@ injury_fin %>%
 - 分布: ベルヌーイ分布    
 - リンク関数: ロジット関数    
 - 応答変数: 怪我が確認されたか否か(`injury01`)           
-- 説明変数: 群れオスからの攻撃頻度(`rate`_agg_tm`)、群れ外オスからの攻撃頻度(`rate_agg_ntm``)、メスの発情の有無(`rs2`)、攻撃頻度と発情の有無の交互作用、調査期間(`study_period`)  
+- 説明変数: 群れオスからの攻撃頻度(`rate`_agg_tm`)、群れ外オスからの攻撃頻度(`rate_agg_ntm``)、メスの発情の有無(`rs2`)、調査期間(`study_period`)  
 - ランダム切片: メスID(`femaleID`)      
 
 ```{r}
-m_agginj <- brm(injury01 ~ rate_agg_tm + rate_agg_ntm + rs2 + rate_agg_ntm:rs2 + rate_agg_tm:rs2 + study_period + (1|femaleID),
+## 被攻撃頻度を群れ追跡時間から算出 
+m_agginj <- brm(injury01 ~ rate_agg_tm + rate_agg_ntm + rs2  + study_period + (1|femaleID),
                 family = bernoulli,
                 iter = 5000, warmup = 2500, seed = 13,
                  prior = c(prior(student_t(4,0,10), class = "b"),
@@ -478,53 +512,50 @@ m_agginj <- brm(injury01 ~ rate_agg_tm + rate_agg_ntm + rs2 + rate_agg_ntm:rs2 +
                  backend = "cmdstanr",
                  data = agg_injury_ntm,
                  file = "model/m_agginj.rds")
+
+## 被攻撃頻度を各個体を確認した時刻から群れ追跡終了時刻までの時間で算出  
+m_agginj2 <- brm(injury01 ~ rate_agg_tm2 + rate_agg_ntm2 + rs2  + study_period + (1|femaleID),
+                family = bernoulli,
+                iter = 5000, warmup = 2500, seed = 13,
+                 prior = c(prior(student_t(4,0,10), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd")),
+                 control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                 backend = "cmdstanr",
+                 data = agg_injury_ntm,
+                 file = "model/m_agginj2.rds")
 ```
 
 ###### モデルチェック  
 `DHARMa`パッケージ及び、そのヘルパーパッケージである`DHARMa.helpers`パッケージを用いてモデルチェックを行う。  
 
-分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
 ```{r, include = FALSE}
 check_agginj <- dh_check_brms(m_agginj)
+check_agginj2 <- dh_check_brms(m_agginj2)
 ```
 
+いずれのモデルも、分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。
 ```{r, fig.dim = c(4.5,4.5)}
 plotQQunif(check_agginj)
 ```
 
+```{r, fig.dim = c(4.5,4.5)}
+plotQQunif(check_agginj2)
+```
+
+
 ###### 結果の確認  
 モデルの結果は以下の通り。`Rhat`はすべて1.01以下であり、収束の問題はないと思われる。有向サンプルサイズにも大きな問題はない。    
+いずれのモデルでも、群れオス・群れ外オスの攻撃いずれもが怪我と有意に関連。  
+
 ```{r}
 model_parameters(m_agginj)
 ```
 <br/>  
 
-交互作用項を含む結果を確認する。  
-
-**群れ外オスからの攻撃**は、発情メスと非発情メスいずれも有意な影響を持たなかった。  
 ```{r}
-estimate_slopes(m_agginj,
-                trend = "rate_agg_ntm",
-                at = "rs2 = c(0,1)")
+model_parameters(m_agginj2)
 ```
-<br/>  
-
-90%確信区間についてみると、非発情メスについては確信区間が0を含まなかった。  
-```{r}
-estimate_slopes(m_agginj,
-                trend = "rate_agg_ntm",
-                at = "rs2 = c(0,1)",
-                ci = 0.9)
-```
-<br/>  
-
-**群れオスからの攻撃**は、いずれの発情状態についても有意に影響していた。    
-```{r}
-estimate_slopes(m_agginj,
-                trend = "rate_agg_tm",
-                at = "rs2 = c(0,1)")
-```
-<br/>  
 
 ##### 結果の作図  
 **群れオス**  
@@ -632,7 +663,8 @@ injury_fin %>%
   ## NAになっているところを0で埋める  
   replace_na(list(no_agg = 0)) %>% 
   ## 被攻撃頻度を算出  
-  mutate(rate_agg = no_agg*60/duration) -> agg_injury_all
+  mutate(rate_agg = no_agg*60/duration,
+         rate_agg2 = no_agg*60/dur) -> agg_injury_all
 ```
 
 #### モデリング
@@ -646,6 +678,7 @@ injury_fin %>%
 - ランダム切片: メスID(`femaleID`)      
 
 ```{r}
+## 被攻撃頻度を群れ追跡時間から算出 
 m_agginj_all <- brm(injury01 ~ rate_agg + rs2 + rate_agg:rs2 + study_period + (1|femaleID),
                     family = bernoulli,
                     iter = 5000, warmup = 2500, seed = 13,
@@ -656,21 +689,39 @@ m_agginj_all <- brm(injury01 ~ rate_agg + rs2 + rate_agg:rs2 + study_period + (1
                      backend = "cmdstanr",
                      data = agg_injury_all,
                      file = "model/m_agginj_all.rds")
+
+## 被攻撃頻度を各個体を確認した時刻から群れ追跡終了時刻までの時間で算出  
+m_agginj_all2 <- brm(injury01 ~ rate_agg2 + rs2 + rate_agg2:rs2 + study_period + (1|femaleID),
+                    family = bernoulli,
+                    iter = 5000, warmup = 2500, seed = 13,
+                    prior = c(prior(student_t(4,0,10), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_injury_all,
+                     file = "model/m_agginj_all2.rds")
 ``` 
 
 ###### モデルチェック  
 `DHARMa`パッケージ及び、そのヘルパーパッケージである`DHARMa.helpers`パッケージを用いてモデルチェックを行う。  
 
-分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
 ```{r, include = FALSE}
 check_agginj_all <- dh_check_brms(m_agginj_all)
+check_agginj_all2 <- dh_check_brms(m_agginj_all2)
 ```
 
+いずれのモデルも、分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。
 ```{r, fig.dim = c(4.5,4.5)}
 plotQQunif(check_agginj_all)
 ```
 
+```{r, fig.dim = c(4.5,4.5)}
+plotQQunif(check_agginj_all2)
+```
+
 ###### 結果の確認  
+**1つ目のモデル**  
 モデルの結果は以下の通り。`Rhat`はすべて1.01以下であり、収束の問題はないと思われる。有向サンプルサイズにも大きな問題はない。    
 ```{r}
 model_parameters(m_agginj_all)
@@ -681,6 +732,20 @@ model_parameters(m_agginj_all)
 ```{r}
 estimate_slopes(m_agginj_all,
                 trend = "rate_agg",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+**2つ目のモデル**  
+こちらも結果は変わらず。  
+```{r}
+model_parameters(m_agginj_all2)
+```
+<br/>  
+
+```{r}
+estimate_slopes(m_agginj_all2,
+                trend = "rate_agg2",
                 at = "rs2 = c(0,1)")
 ```
 <br/>  
@@ -702,7 +767,7 @@ agg_injury_all %>%
   geom_point(shape = "|", size = 3)+
   geom_line(data = fit_agginj_all,
             aes(y = Estimate, linetype = as.factor(rs2)),
-            size = 0.7)+
+            linewidth = 0.7)+
   theme_bw(base_size = 14)+
   scale_y_continuous(breaks = seq(0,1,by = 0.2)) +
   labs(x = "オスからの攻撃頻度", y = "怪\n我\n日\n数\n割\n合\n(回/日)",
@@ -717,7 +782,7 @@ agg_injury_all %>%
         legend.title = element_text(family = "Yu Mincho"),
         aspect.ratio = 1) -> p_agginj_all
 
-# ggsave("figure/p_agginj_all.png", p_agginj_all, width = 240, height = 120, units = "mm", dpi = 600)
+#ggsave("figure/p_agginj_all.png", p_agginj_all, width = 240, height = 120, units = "mm", dpi = 600)
 ```
 
 結果は以下のようになる(図\@ref(fig:fig-agginj-all))。  
