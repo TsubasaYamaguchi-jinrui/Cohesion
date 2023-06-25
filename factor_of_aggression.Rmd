@@ -32,13 +32,6 @@ focal_raw_fin %>%
          std_est = standardize(no_est)) -> focal_sum
 ```
 
-まとめたものは以下の通り。  
-```{r}
-datatable(focal_sum,
-          options = list(scrollX = 10,
-                         filter = list(position = "top")))
-```
-<br/>  
 
 **群れオス・群れ外オスを区別**  
 ```{r}
@@ -53,7 +46,7 @@ focal_raw_fin %>%
                        ifelse(is.na(ntm2) & !is.na(aggressor_focal2),1,ntm1))) -> focal_raw_fin_b
   
 focal_raw_fin_b %>% 
-  filter(agg_focal == "1") -> a 
+  filter(agg_focal == "1") %>% 
   group_by(no_focal, subject, ntm1) %>% 
   summarise(no_agg = sum(agg_focal, na.rm = TRUE)) %>% 
   ungroup() %>% 
@@ -79,18 +72,25 @@ left_join(focal_list_ntm1, focal_list_ntm2) %>%
   replace_na(list(agg_tm = 0, agg_ntm = 0)) -> focal_sum_ntm
 ```
 
+まとめたものは以下の通り。  
+```{r}
+datatable(focal_sum,
+          options = list(scrollX = 10),
+          filter = list(position ="top"))
+```
+<br/>  
 
 ### 分析  
-#### 群れオスと群れ外オスの攻撃を区別しない  
-*IT*は2021年には群れから移出していなくなってしまっていたため、*IT*の有無を変数に含める場合には2019~2020年のデータのみを用いた。  
+#### 群れオスと群れ外オスの攻撃を区別しない    
+まず、群れオスと群れ外オスの攻撃を区別しないで分析を行う。  
 
-##### モデリング(2019~2021年)  
+##### モデリング    
 モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。    
 
 - 分布: 負の二項分布  
 - 応答変数: 被攻撃回数(`no_agg`)    
 - オフセット項: log(追跡時間)(`logdur`)    
-- 説明変数: 追跡個体の発情の有無(`rs2`)、観察日の群れ外オス数(`cen_ntm`)、発情メス数(`cen_est`)、発情の有無×群れ外オス数、発情の有無×発情メス数、*TY*の有無(`TY`)、*IT*の有無(`IT`: 2020~2021のモデルのみ)、調査期間(`study_period`)    
+- 説明変数: 追跡個体の発情の有無(`rs2`)、観察日の群れ外オス数(`cen_ntm`)、発情メス数(`cen_est`)、発情の有無×群れ外オス数、発情の有無×発情メス数、*TY*の有無(`TY`)、調査期間(`study_period`)    
 - ランダム切片: 追跡個体ID  
 
 ```{r}
@@ -129,10 +129,11 @@ check_collinearity(m_aggfocal)
 ```
 
 ###### 結果の確認  
-発情メス数と*TY*の有無が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。また、2021年は他の変数を統制したときに2019年より被攻撃頻度が低かったようだ。  
+発情メス数と*TY*の有無、発情の有無、調査期間が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。また、2021年は他の変数を統制したときに2019年より被攻撃頻度が低かったようだ。  
 ```{r}
 model_parameters(m_aggfocal)
 ```
+<br/>  
 
 交互作用項のある変数の検討を行う。  
 
@@ -152,7 +153,78 @@ estimate_slopes(m_aggfocal,
 ```
 <br/>  
 
+発情の有無については、群れ外オス数に関わりなく非発情メスの方が発情メスよりも被攻撃頻度が有意に低い(図\@ref(fig:fig-aggfocal-rs)の左)。一方で、発情メス数との関連については、発情メス数が10頭を超えるくらいまでは非発情メスの方が発情メスよりも被攻撃頻度が有意に低い(図\@ref(fig:fig-aggfocal-rs)の右)。10頭を超えることはまれなので、ほとんどの場合において非発情メスの方が被攻撃頻度は低いといえるだろう。  
+
+```{r fig-aggfocal-rs, fig.dim = c(12,5), fig.cap = "群れ外オス数/発情メス数ごとの発情の有無の効果"}
+estimate_contrasts(m_aggfocal,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_ntm"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_rs_ntm
+
+estimate_cont_rs_ntm %>%
+  mutate(no_ntm = cen_ntm + mean(focal_sum$no_ntm)) %>% 
+  ggplot(aes(x = no_ntm, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of nontroop males",
+       y = "anesrus - estrous",
+       x = "no. of nontroop males") -> p_cont_rs_ntm
+
+estimate_contrasts(m_aggfocal,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_est"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_rs_est
+
+estimate_cont_rs_est %>%
+  mutate(no_est = cen_est + mean(focal_sum$no_est)) %>% 
+  ggplot(aes(x = no_est, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of estrous females",
+       y = "anesrus - estrous",
+       x = "no. of estrous females") -> p_cont_rs_est
+
+p_cont_rs_ntm + p_cont_rs_est
+```
+
+###### 結果の図示  
+
+##### 結果まとめ  
+- *TY*が群れにいる日はいない日に比べて、また(発情メス数が10頭以下くらいであれば)非発情メスは発情メスに比べて被攻撃頻度が有意に低かった。  
+- 発情メス・非発情メスいずれについても発情メス数が多い日ほど被攻撃頻度が高い傾向があった。  
+
+
 #### 群れオス・群れ外オスを区別  
+続いて、群れオスと群れ外オスの攻撃を区別して分析する。  
+いずれの分析ではモデルは以下の通りで、群れオス・群れ外オスを区別しない場合と同じである。  
+
+- 分布: 負の二項分布  
+- 応答変数: 被攻撃回数(`no_agg`)    
+- オフセット項: log(追跡時間)(`logdur`)    
+- 説明変数: 追跡個体の発情の有無(`rs2`)、観察日の群れ外オス数(`cen_ntm`)、発情メス数(`cen_est`)、発情の有無×群れ外オス数、発情の有無×発情メス数、*TY*の有無(`TY`)、調査期間(`study_period`)    
+- ランダム切片: 追跡個体ID  
+
+##### 群れオスからの攻撃頻度  
+###### モデリング1    
+まず、群れオスの攻撃についてモデリングする。  
 ```{r}
 m_aggfocal_tm <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_ntm:rs2 + TY + IT + study_period 
                          + offset(logdur) + (1|subject),
@@ -166,7 +238,31 @@ m_aggfocal_tm <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_nt
                          backend = "cmdstanr",
                          data = focal_sum_ntm,
                          file = "model/m_aggfocal_tm.rds")
+```
 
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm <- dh_check_brms(m_aggfocal_tm)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm)
+```
+
+ただし、VIFが10以上の変数がある。  
+```{r}
+check_collinearity(m_aggfocal_tm)
+```
+
+###### モデリング2      
+そこで、以下で群れ外オス数と発情メス数についてそれぞれ別のモデルを作成した。 
+```{r}
 m_aggfocal_tm_est <- brm(agg_tm ~ cen_est  +  rs2 +  cen_est:rs2 + TY + study_period 
                          + offset(logdur) + (1|subject),
                          family = negbinomial,
@@ -194,6 +290,119 @@ m_aggfocal_tm_ntm <- brm(agg_tm ~ cen_ntm  +  rs2 +  cen_ntm:rs2 + TY  + study_p
                   file = "model/m_aggfocal_tm_ntm.rds")
 ```
 
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggfocal_tm_est <- dh_check_brms(m_aggfocal_tm_est)
+check_m_aggfocal_tm_ntm <- dh_check_brms(m_aggfocal_tm_ntm)
+```
+
+いずれのモデルについても、分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggfocal_tm_est)
+plotQQunif(check_m_aggfocal_tm_ntm)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm_est)
+testZeroInflation(check_m_aggfocal_tm_ntm)
+```
+
+VIFも発情メス数についてはやや高いものの、10以下には収まっている。    
+```{r}
+check_collinearity(m_aggfocal_tm_est)
+check_collinearity(m_aggfocal_tm_ntm)
+```
+
+**結果の確認**  
+
+いずれのモデルでも、発情の有無と調査期間のみが有意だった。  
+```{r}
+### 発情メス数
+model_parameters(m_aggfocal_tm_est)
+```
+<br/>  
+
+```{r}
+### 群れ外オス数  
+model_parameters(m_aggfocal_tm_ntm)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。発情メス・非発情メスのいずれについても観察日の発情メス数や群れ外オス数の効果はなかった。  
+```{r}
+estimate_slopes(m_aggfocal_tm_est,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+```{r}
+estimate_slopes(m_aggfocal_tm_ntm,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+発情の有無については、群れ外オス数や発情メス数に関わりなく非発情メスの方が発情メスよりも被攻撃頻度が有意に低い(図\@ref(fig:fig-aggfocal-rs-tm))。  
+```{r fig-aggfocal-rs-tm, fig.dim = c(12,5), fig.cap = "群れ外オス数/発情メス数ごとの発情の有無の効果"}
+estimate_contrasts(m_aggfocal_tm_ntm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_ntm"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_rs_tm_ntm
+
+estimate_cont_rs_tm_ntm %>%
+  mutate(no_ntm = cen_ntm + mean(focal_sum_ntm$no_ntm)) %>% 
+  ggplot(aes(x = no_ntm, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of nontroop males",
+       y = "anesrus - estrous",
+       x = "no. of nontroop males") -> p_cont_rs_tm_ntm
+
+estimate_contrasts(m_aggfocal_tm_est,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_est"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_rs_tm_est
+
+estimate_cont_rs_tm_est %>%
+  mutate(no_est = cen_est + mean(focal_sum_ntm$no_est)) %>% 
+  ggplot(aes(x = no_est, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of estrous females",
+       y = "anesrus - estrous",
+       x = "no. of estrous females") -> p_cont_rs_tm_est
+
+p_cont_rs_tm_ntm + p_cont_rs_tm_est
+```
+
+###### 結果まとめ  
+- 群れオスからの攻撃については、発情メス数や群れ外オス数の有意な影響はなかった。  
+- 発情の有無のみが明確に影響を与えている要因だった。  
+
+##### 群れ外オスからの攻撃頻度  
+###### モデリング  
+続いて、群れ外オスからの攻撃についてモデリングする。  
 
 ```{r}
 m_aggfocal_ntm <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est:rs2 + TY + study_period 
@@ -207,11 +416,26 @@ m_aggfocal_ntm <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est
                      control=list(adapt_delta = 0.9999, max_treedepth = 20),
                      backend = "cmdstanr",
                      data = focal_sum_ntm,
-                  file = "model/m_aggfocal_ntm.rds")
+                     file = "model/m_aggfocal_ntm.rds")
+
+m_aggfocal_ntm2 <- brm(agg_ntm ~ cen_ntm  + rs2 + cen_ntm:rs2 + TY + study_period 
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm,
+                     file = "model/m_aggfocal_ntm2.rds")
 ```
 
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
 ```{r, include = FALSE}
-check_m_aggfocal_tm <- dh_check_brms(m_aggfocal_tm_est)
+check_m_aggfocal_ntm <- dh_check_brms(m_aggfocal_ntm)
 ```
 
 ```{r}
@@ -220,7 +444,7 @@ plotQQunif(check_m_aggfocal_ntm)
 
 ゼロ過剰の問題もない。  
 ```{r}
-testZeroInflation(check_m_aggfocal_tm)
+testZeroInflation(check_m_aggfocal_ntm)
 ```
 
 VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
@@ -228,29 +452,109 @@ VIFは全て10以下であり、そこまで多重共線性の問題はないよ
 check_collinearity(m_aggfocal_ntm)
 ```
 
+**結果の確認**  
+発情メス数、調査期間のみ有意な影響があった。なお、調査期間について2021年が2019年より被攻撃頻度が有意に低かったが、2020年と2019年の違いは有意ではなかった。  
 ```{r}
 model_parameters(m_aggfocal_ntm)
 ```
+<br/>  
 
+*TY*の有無に関しては、90%確信区間には0は含まれなかった。  
+```{r}
+model_parameters(m_aggfocal_ntm, ci = 0.9)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と正の関連があった。  
 ```{r}
 estimate_slopes(m_aggfocal_ntm,
                 trend = "cen_est",
                 at = "rs2 = c(0,1)")
 ```
+<br/>  
 
+群れ外オス数については、発情メス・非発情メスのいずれについて有意な効果はなかった。  
+```{r}
+estimate_slopes(m_aggfocal_ntm,
+                trend = "cen_ntm",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+発情の有無については、群れ外オス数や発情メス数に関わりなく非発情メスの方と発情メスの被攻撃頻度の差は有意ではなかった(図\@ref(fig:fig-aggfocal-rs-ntm))。  
+
+```{r fig-aggfocal-rs-ntm, fig.dim = c(12,5), fig.cap = "群れ外オス数/発情メス数ごとの発情の有無の効果"}
+estimate_contrasts(m_aggfocal_ntm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_ntm"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_rs_ntm_ntm
+
+estimate_cont_rs_ntm_ntm %>%
+  mutate(no_ntm = cen_ntm + mean(focal_sum_ntm$no_ntm)) %>% 
+  ggplot(aes(x = no_ntm, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of nontroop males",
+       y = "anesrus - estrous",
+       x = "no. of nontroop males") -> p_cont_rs_ntm_ntm
+
+estimate_contrasts(m_aggfocal_ntm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_est"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_rs_ntm_est
+
+estimate_cont_rs_ntm_est %>%
+  mutate(no_est = cen_est + mean(focal_sum_ntm$no_est)) %>% 
+  ggplot(aes(x = no_est, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of estrous females",
+       y = "anesrus - estrous",
+       x = "no. of estrous females") -> p_cont_rs_ntm_est
+
+p_cont_rs_ntm_ntm + p_cont_rs_ntm_est
+```
+
+###### 結果まとめ  
+- 群れ外オスからの攻撃については、発情メス・非発情メスともに発情メス数が有意に被攻撃頻度と正に関連していた。    
+- 発情の有無による被攻撃頻度の違いはそこまで顕著ではなかった。   
+- *TY*の有無による被攻撃頻度の違いは有意な傾向。  
 
 ## 全生起サンプリングを用いた分析  
-### 群れオス・群れ外オスの攻撃を区別しない  
+続いて、全生起サンプリングのデータを用いて同様の分析を行う。  
 
-#### データの加工  
+### データの加工  
 6歳以上のメスについて、各メスが確認された時刻から追跡終了までが300分以上のメスのデータのみを用いる。  
 ```{r}
 female_dur %>% 
   filter(!str_detect(study_period,"nm")) %>% 
   left_join(agg_female_all, by = c("date","femaleID")) %>% 
   replace_na(list(no_agg = 0)) %>% 
+  left_join(agg_female_ntm, by = c("date","femaleID")) %>% 
+  replace_na(list(agg_tm = 0, agg_ntm = 0)) %>% 
+  mutate(ok = ifelse(no_agg == agg_tm + agg_ntm,1,0)) %>% 
   left_join(female_all, by = c("date", "femaleID")) %>% 
-  filter(dur >= 300) -> agg_female_all_b
+  filter(dur >= 300) -> agg_ao_all
 ```
 
 観察日の群れ外オス数、発情メス数の情報を追加。  
@@ -261,15 +565,14 @@ male_all %>%
   filter(ntm == "1") %>% 
   summarise(no_ntm= sum(presence)) %>% 
   ungroup() %>% 
-  right_join(agg_female_all_b) ->
-  agg_female_all_c
+  right_join(agg_ao_all) -> agg_ao_all_b
 
 ## 発情メス数  
 female_all %>% 
   group_by(date) %>% 
   summarise(no_est = sum(rs2, na.rm = TRUE)) %>% 
   ungroup() %>% 
-  right_join(agg_female_all_c) -> agg_female_all_d
+  right_join(agg_ao_all_b) -> agg_ao_all_c
 ```
 
 *TY*と*IT*の確認状況を追加する。なお、1時間以上確認できた日を1、1時間未満しか確認できていない日を0とした。  
@@ -290,13 +593,397 @@ hr20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/20
         select(date,TY,IT)
 
 ## 2021  
-hr21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
+hr21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2021mating/2021mating_raw.xlsx",
               sheet =　"male_presence_anal") %>% 
-        select(date,TY,IT)
+        select(date,TY)
 
 ## 結合して加工
 bind_rows(hr18, hr19, hr20, hr21) %>% 
-  pivot_longer(cols = TY:IT)
+  replace_na(list(IT = 0)) %>% 
+  mutate(date = as_date(date))-> hr_presence
+
+agg_ao_all_c %>% 
+  left_join(hr_presence, by = "date") -> agg_ao_all_d
+```
+
+各観察日の群れ追跡時間を追加する。また、群れ外オス数と発情メス数を中心化する。    
+```{r}
+agg_ao_all_d %>% 
+  left_join(base_all %>% select(date,duration)) %>% 
+  mutate(logdur = log(duration/60)) %>% 
+  ungroup() %>% 
+  mutate() %>% 
+  filter(study_period != "m18") %>% 
+  mutate(cen_est = no_est - mean(no_est),
+         cen_ntm = no_ntm - mean(no_ntm))-> agg_ao_all_fin
+```
+
+データは以下の通り。  
+```{r}
+datatable(agg_ao_all_fin,
+          options = list(scrollX = 30), 
+          filter = list(position ="top"))
+```
+
+### 分析  
+#### 群れオスと群れ外オスを区別しない  
+まず、群れオスと群れ外オスの攻撃を区別しないで分析を行う。  
+
+##### モデリング    
+モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。    
+
+- 分布: 負の二項分布  
+- 応答変数: 被攻撃回数(`no_agg`)    
+- オフセット項: log(群れ追跡時間)(`logdur`)    
+- 説明変数: 追跡個体の発情の有無(`rs2`)、観察日の群れ外オス数(`cen_ntm`)、発情メス数(`cen_est`)、発情の有無×群れ外オス数、発情の有無×発情メス数、*TY*の有無(`TY`)、調査期間(`study_period`)    
+- ランダム切片: メスID(`femaleID`)、観察日(`date`)    
+
+```{r}
+m_aggao <- brm(no_agg ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + study_period 
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)),
+                  file = "model/m_aggao.rds")
+```
+
+###### モデルチェック  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggao <- dh_check_brms(m_aggao)
+```
+
+```{r}
+plotQQunif(check_m_aggao)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggao)
+```
+
+###### 結果の確認  
+発情メス数と群れ外オス数、*TY*の有無、発情の有無、調査期間が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。
+```{r}
+model_parameters(m_aggao)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と正の関連があった。  
+```{r}
+estimate_slopes(m_aggao,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数については、発情の有無に限らず被攻撃頻度とは有意な正の関連があった。  
+```{r}
+estimate_slopes(m_aggao,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+発情の有無については、群れ外オス数や発情メス数に関わりなく非発情メスの方が発情メスよりも被攻撃頻度が有意に低い(図\@ref(fig:fig-aggao-rs))。  
+
+```{r fig-aggao-rs, fig.dim = c(12,5), fig.cap = "群れ外オス数/発情メス数ごとの発情の有無の効果"}
+estimate_contrasts(m_aggao,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_ntm"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_ao_rs_ntm
+
+estimate_cont_ao_rs_ntm %>%
+  mutate(no_ntm = cen_ntm + mean(agg_ao_all_fin$no_ntm)) %>% 
+  ggplot(aes(x = no_ntm, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of nontroop males",
+       y = "anesrus - estrous",
+       x = "no. of nontroop males") -> p_cont_ao_rs_ntm
+
+estimate_contrasts(m_aggao,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_est"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_ao_rs_est
+
+estimate_cont_ao_rs_est %>%
+  mutate(no_est = cen_est + mean(agg_ao_all_fin$no_est)) %>% 
+  ggplot(aes(x = no_est, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of estrous females",
+       y = "anesrus - estrous",
+       x = "no. of estrous females") -> p_cont_ao_rs_est
+
+p_cont_ao_rs_ntm + p_cont_ao_rs_est
+```
+
+#### 群れオス・群れ外オスを区別する    
+続いて、群れオスと群れ外オスの攻撃を区別して分析する。  
+いずれの分析ではモデルは以下の通りで、群れオス・群れ外オスを区別しない場合と同じである。  
+
+- 分布: 負の二項分布  
+- 応答変数: 被攻撃回数(`no_agg`)    
+- オフセット項: log(追跡時間)(`logdur`)    
+- 説明変数: 追跡個体の発情の有無(`rs2`)、観察日の群れ外オス数(`cen_ntm`)、発情メス数(`cen_est`)、発情の有無×群れ外オス数、発情の有無×発情メス数、*TY*の有無(`TY`)、調査期間(`study_period`)    
+- ランダム切片: 追跡個体ID  
+
+##### 群れオスからの攻撃頻度  
+###### モデリング    
+まず、群れオスの攻撃についてモデリングする。  
+```{r}
+m_aggao_tm <- brm(agg_tm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + study_period 
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)),
+                  file = "model/m_aggao_tm.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_tm <- dh_check_brms(m_aggao_tm)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_tm)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_tm)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_tm)
+```
+
+**結果の確認**  
+発情メス数と群れ外オス数、*TY*の有無、発情の有無、調査期間が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。
+```{r}
+### 発情メス数
+model_parameters(m_aggao_tm)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メスのみで観察日の発情メス数が被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_tm,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についても、非発情メスのみで被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_tm,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+発情の有無については、群れ外オス数や発情メス数に関わりなく非発情メスの方が発情メスよりも被攻撃頻度が有意に低い(図\@ref(fig:fig-aggao-rs-tm))。  
+```{r fig-aggao-rs-tm, fig.dim = c(12,5), fig.cap = "群れ外オス数/発情メス数ごとの発情の有無の効果"}
+estimate_contrasts(m_aggao_tm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_ntm"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_ao_rs_tm_ntm
+
+estimate_cont_ao_rs_tm_ntm %>%
+  mutate(no_ntm = cen_ntm + mean(agg_ao_all_fin$no_ntm)) %>% 
+  ggplot(aes(x = no_ntm, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of nontroop males",
+       y = "anesrus - estrous",
+       x = "no. of nontroop males") -> p_cont_ao_rs_tm_ntm
+
+estimate_contrasts(m_aggao_tm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_est"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_ao_rs_tm_est
+
+estimate_cont_ao_rs_tm_est %>%
+  mutate(no_est = cen_est + mean(agg_ao_all_fin$no_est)) %>% 
+  ggplot(aes(x = no_est, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of estrous females",
+       y = "anesrus - estrous",
+       x = "no. of estrous females") -> p_cont_ao_rs_tm_est
+
+p_cont_rs_tm_ntm + p_cont_rs_tm_est
 ```
 
 
+##### 群れ外オスからの攻撃頻度  
+###### モデリング  
+```{r}
+m_aggao_ntm <- brm(agg_ntm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + study_period 
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)),
+                  file = "model/m_aggao_ntm.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_ntm <- dh_check_brms(m_aggao_ntm)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_ntm)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_ntm)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_ntm)
+```
+
+**結果の確認**  
+発情メス数と群れ外オス数、*TY*の有無、発情の有無、調査期間が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。
+```{r}
+### 発情メス数
+model_parameters(m_aggao_ntm)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メス・発情メスいずれも観察日の発情メス数が被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_ntm,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についても、非発情メス・発情メスいずれも被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_ntm,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+発情の有無については、群れ外オス数や発情メス数がそこまで多くなければ非発情メス数の方が発情メスよりも被攻撃頻度が有意に低かった(図\@ref(fig:fig-aggao-rs-ntm))。  
+```{r fig-aggao-rs-ntm, fig.dim = c(12,5), fig.cap = "群れ外オス数/発情メス数ごとの発情の有無の効果"}
+estimate_contrasts(m_aggao_ntm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_ntm"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_ao_rs_ntm_ntm
+
+estimate_cont_ao_rs_ntm_ntm %>%
+  mutate(no_ntm = cen_ntm + mean(agg_ao_all_fin$no_ntm)) %>% 
+  ggplot(aes(x = no_ntm, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of nontroop males",
+       y = "anesrus - estrous",
+       x = "no. of nontroop males") -> p_cont_ao_rs_ntm_ntm
+
+estimate_contrasts(m_aggao_ntm,
+                   contrast = "rs2 = c(0,1)",
+                   at = c("cen_est"),
+                   length = 30) %>% 
+  data.frame() -> estimate_cont_ao_rs_ntm_est
+
+estimate_cont_ao_rs_ntm_est %>%
+  mutate(no_est = cen_est + mean(agg_ao_all_fin$no_est)) %>% 
+  ggplot(aes(x = no_est, y = Difference))+
+  geom_line()+
+  geom_ribbon(aes(ymin = CI_low,
+                  ymax = CI_high),
+              alpha = 0.2)+
+  geom_hline(yintercept = 0,
+             color = "red")+
+  theme_bw(base_size = 14)+
+  theme(aspect.ratio = 1,
+        plot.title = element_text(size = 13))+
+  scale_x_continuous(breaks = seq(0,13,1))+
+  labs(title = "Effect of estrous status\nby number of estrous females",
+       y = "anesrus - estrous",
+       x = "no. of estrous females") -> p_cont_ao_rs_ntm_est
+
+p_cont_ao_rs_ntm_ntm + p_cont_ao_rs_ntm_est
+```

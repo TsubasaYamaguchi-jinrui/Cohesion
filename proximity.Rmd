@@ -1,23 +1,39 @@
 ```{r}
-focal18_raw <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2018mating/2018mating_raw.xlsx",
-                      sheet = "focal_raw")
+focal_raw %>% 
+  filter(study_period == "m18") %>% 
+  separate(x0_1m, into = str_c("x0_1m",1:4), sep = ",") %>% 
+  separate(x1_3m, into = str_c("x1_3m",1:7), sep = ",") %>% 
+  separate(x3_5m, into = str_c("x3_5m",1:8), sep = ",") %>% 
+  separate(x5_10m, into = str_c("x5_10m", 1:6), sep = ",") %>% 
+  pivot_longer(cols = x0_1m1:x5_10m6,
+               names_to = "proximity",
+               values_to = "ID") %>% 
+  mutate(proximity = ifelse(str_detect(proximity,"x0_1m"),"x0_1m",
+                            ifelse(str_detect(proximity,"x1_3m"),"x1_3m",
+                                   ifelse(str_detect(proximity,"x3_5m"),"x3_5m",
+                                          ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) -> focal18_prox
 
-focal18_raw %>% 
-  mutate(type = ifelse(str_detect(Event,"Bite"),4,
-                                  ifelse(str_detect(Event,"Grab"),3,
-                                         ifelse(str_detect(Event,"Slap"),3,
-                                                    ifelse(str_detect(Event,"Ch"),2,
-                                                                      ifelse(str_detect(Event,"Lg"),1,
-                                                                             ifelse(str_detect(Event,"Th"),0,
-                                                                                    ifelse(str_detect(Event,"Sup"),0,"NA")))))))) -> a
+focal18_prox %>% 
+  filter(ID == "ka")
 
-focal18_raw %>% 
-  mutate(aggressor = sub(".*\\(", "",Event)) %>% 
-  mutate(aggressor = sub(",.*","", aggressor)) %>% 
-  mutate(victim = sub(".*,","",Event)) %>% 
-  mutate(victim = sub("\\)","",victim)) -> a
+adult <- female18 %>% filter(age >= 6) %>% distinct(femaleID)
 
-write_csv(a,"b.csv")
+focal18_prox %>% 
+  filter(RG == "1") %>% 
+  filter(!is.na(ID)) %>% 
+  filter(ID %in% adult$femaleID | ID %in% c("TY","IT","LK","KR")) %>% 
+  group_by(date,no_focal, time) %>% 
+  summarise(N = n() + 1) %>% 
+  ungroup()-> a
+
+focal_raw %>%
+  filter(study_period == "m18") %>% 
+  left_join(a, by = c("date","time","no_focal")) %>% 
+  filter(RG == "1") %>% 
+  mutate(ok = ifelse(RGsize == N, 1,0)) %>% 
+  select(no_focal, date,subject, time,activity,RGsize, x0_1m, x1_3m,x3_5m,x5_10m,N,ok) -> ok
+
+write_csv(ok,"ok.csv")
 
 focal19 %>% 
   separate(x0_1m, into = str_c("x0_1m",1:5), sep = ",") %>% 

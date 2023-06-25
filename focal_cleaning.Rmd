@@ -51,7 +51,8 @@ focal_raw18 %>%
 データは以下の通り。  
 ```{r}
 datatable(focal_raw,
-          options = list(scrollX = 60))
+          options = list(scrollX = 60),
+          filter = list(position ="top"))
 ```
 <br/>  
 
@@ -207,6 +208,6 @@ focal_raw_g %>%
 加工したデータは以下の通り。  
 ```{r}
 datatable(focal_raw_fin,
-          options = list(scrollX = 60,
-                         filter = list(position = 'top')))
+          options = list(scrollX = 60),
+          filter = list(position ="top"))
 ```

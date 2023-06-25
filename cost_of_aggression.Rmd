@@ -60,7 +60,8 @@ focal_list <- bind_rows(focal_list_m,focal_list19nm, focal_list21nm, focal_list2
 データは以下の通り。  
 ```{r}
 datatable(focal_list,
-          options = list(scrollX = 20))
+          options = list(scrollX = 20),
+          filter = list(position ="top"))
 ```
 <br/>  
 
@@ -275,7 +276,8 @@ injury_fin %>%
 データは以下の通り。  
 ```{r}
 datatable(injury_long,
-          options = list(scrollX = 20))
+          options = list(scrollX = 20),
+          filter = list(position ="top"))
 ```
 
 #### 分析  
@@ -427,7 +429,8 @@ bind_rows(agg18, agg19, agg20, agg21) %>%
 
 データは以下の通り。  
 ```{r}
-datatable(aggression_all)
+datatable(aggression_all,
+          filter = list(position ="top"))
 ```
 <br/>  
 

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>5 基礎情報の算出と図表の作成 | 交尾期の群れ内の凝集性に関する分析</title>
+  <meta name="description" content="5 基礎情報の算出と図表の作成 | 交尾期の群れ内の凝集性に関する分析" />
+  <meta name="generator" content="bookdown 0.31 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="5 基礎情報の算出と図表の作成 | 交尾期の群れ内の凝集性に関する分析" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="5 基礎情報の算出と図表の作成 | 交尾期の群れ内の凝集性に関する分析" />
+  
+  
+  
+
+<meta name="author" content="Tsubasa Yamaguchi" />
+
+
+<meta name="date" content="2023-06-25" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="factor_of_aggression.html"/>
+<link rel="next" href="RGsuc.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="libs/pagedtable-1.1/js/pagedtable.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<script src="libs/htmlwidgets-1.6.1/htmlwidgets.js"></script>
+<link href="libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="libs/datatables-binding-0.27/datatables.js"></script>
+<link href="libs/dt-core-1.12.1/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="libs/dt-core-1.12.1/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="libs/dt-core-1.12.1/js/jquery.dataTables.min.js"></script>
+<link href="libs/nouislider-7.0.10/jquery.nouislider.min.css" rel="stylesheet" />
+<script src="libs/nouislider-7.0.10/jquery.nouislider.min.js"></script>
+<link href="libs/selectize-0.12.0/selectize.bootstrap3.css" rel="stylesheet" />
+<script src="libs/selectize-0.12.0/selectize.min.js"></script>
+<link href="libs/crosstalk-1.2.0/css/crosstalk.min.css" rel="stylesheet" />
+<script src="libs/crosstalk-1.2.0/js/crosstalk.min.js"></script>
+<link href="libs/tabwid-1.1.3/tabwid.css" rel="stylesheet" />
+<script src="libs/tabwid-1.1.3/tabwid.js"></script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="custom_style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>本稿の目的</a></li>
+<li class="chapter" data-level="" data-path="Chapter0.html"><a href="Chapter0.html"><i class="fa fa-check"></i>0. パッケージの読み込み</a></li>
+<li class="chapter" data-level="1" data-path="Chapter1.html"><a href="Chapter1.html"><i class="fa fa-check"></i><b>1</b> 使用する基礎データ</a></li>
+<li class="chapter" data-level="2" data-path="focal_cleaning.html"><a href="focal_cleaning.html"><i class="fa fa-check"></i><b>2</b> データクリーニング</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#データの読み込み"><i class="fa fa-check"></i><b>2.1</b> データの読み込み</a></li>
+<li class="chapter" data-level="2.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#データの加工"><i class="fa fa-check"></i><b>2.2</b> データの加工</a>
+<ul>
+<li class="chapter" data-level="2.2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#メス情報の追加"><i class="fa fa-check"></i><b>2.2.1</b> メス情報の追加</a>
+<ul>
+<li class="chapter" data-level="2.2.1.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#追跡個体の発情状態と各観察日の確認メス数の追加"><i class="fa fa-check"></i><b>2.2.1.1</b> 追跡個体の発情状態と各観察日の確認メス数の追加</a></li>
+<li class="chapter" data-level="2.2.1.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#各観察日の発情メス数のデータを追加"><i class="fa fa-check"></i><b>2.2.1.2</b> 各観察日の発情メス数のデータを追加</a></li>
+</ul></li>
+<li class="chapter" data-level="2.2.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#オスの情報の追加"><i class="fa fa-check"></i><b>2.2.2</b> オスの情報の追加</a>
+<ul>
+<li class="chapter" data-level="2.2.2.1" data-path="focal_cleaning.html"><a href="focal_cleaning.html#s-ntm"><i class="fa fa-check"></i><b>2.2.2.1</b> 群れ外オスの数</a></li>
+<li class="chapter" data-level="2.2.2.2" data-path="focal_cleaning.html"><a href="focal_cleaning.html#tyとitの確認状況"><i class="fa fa-check"></i><b>2.2.2.2</b> TYとITの確認状況</a></li>
+<li class="chapter" data-level="2.2.2.3" data-path="focal_cleaning.html"><a href="focal_cleaning.html#フォーカルを攻撃したオスのid"><i class="fa fa-check"></i><b>2.2.2.3</b> フォーカルを攻撃したオスのID</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html"><i class="fa fa-check"></i><b>3</b> オスの攻撃はメスのコストになっているのか</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#交尾期と非交尾期の比較"><i class="fa fa-check"></i><b>3.1</b> 交尾期と非交尾期の比較</a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#被攻撃頻度"><i class="fa fa-check"></i><b>3.1.1</b> 被攻撃頻度</a>
+<ul>
+<li class="chapter" data-level="3.1.1.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#データの読み込み加工"><i class="fa fa-check"></i><b>3.1.1.1</b> データの読み込み・加工</a></li>
+<li class="chapter" data-level="3.1.1.2" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#分析"><i class="fa fa-check"></i><b>3.1.1.2</b> 分析</a>
+<ul>
+<li class="chapter" data-level="3.1.1.2.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#モデリング"><i class="fa fa-check"></i><b>3.1.1.2.1</b> モデリング</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3.1.2" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#injcomp"><i class="fa fa-check"></i><b>3.1.2</b> 怪我の頻度</a>
+<ul>
+<li class="chapter" data-level="3.1.2.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#データの読み込みと加工"><i class="fa fa-check"></i><b>3.1.2.1</b> データの読み込みと加工</a></li>
+<li class="chapter" data-level="3.1.2.2" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#分析-1"><i class="fa fa-check"></i><b>3.1.2.2</b> 分析</a>
+<ul>
+<li class="chapter" data-level="3.1.2.2.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#モデリング-1"><i class="fa fa-check"></i><b>3.1.2.2.1</b> モデリング</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#交尾期内での被攻撃頻度と怪我の関連"><i class="fa fa-check"></i><b>3.2</b> 交尾期内での被攻撃頻度と怪我の関連</a>
+<ul>
+<li class="chapter" data-level="3.2.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#データの読み込み加工-1"><i class="fa fa-check"></i><b>3.2.1</b> データの読み込み・加工</a></li>
+<li class="chapter" data-level="3.2.2" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#分析1-群れオス群れ外オスを区別"><i class="fa fa-check"></i><b>3.2.2</b> 分析1 (群れオス・群れ外オスを区別)</a>
+<ul>
+<li class="chapter" data-level="3.2.2.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#モデリング-2"><i class="fa fa-check"></i><b>3.2.2.1</b> モデリング</a>
+<ul>
+<li class="chapter" data-level="3.2.2.1.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#結果の作図"><i class="fa fa-check"></i><b>3.2.2.1.1</b> 結果の作図</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3.2.3" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#分析2-群れオス群れ外オスを区別しない"><i class="fa fa-check"></i><b>3.2.3</b> 分析2 (群れオス・群れ外オスを区別しない)</a>
+<ul>
+<li class="chapter" data-level="3.2.3.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#データの加工-1"><i class="fa fa-check"></i><b>3.2.3.1</b> データの加工</a></li>
+<li class="chapter" data-level="3.2.3.2" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#モデリング-3"><i class="fa fa-check"></i><b>3.2.3.2</b> モデリング</a>
+<ul>
+<li class="chapter" data-level="3.2.3.2.1" data-path="cost_of_aggression.html"><a href="cost_of_aggression.html#結果の作図-1"><i class="fa fa-check"></i><b>3.2.3.2.1</b> 結果の作図</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html"><i class="fa fa-check"></i><b>4</b> メスの被攻撃頻度はどのようなときに多くなるか</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#個体追跡データによる分析"><i class="fa fa-check"></i><b>4.1</b> 個体追跡データによる分析</a>
+<ul>
+<li class="chapter" data-level="4.1.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#データの加工-2"><i class="fa fa-check"></i><b>4.1.1</b> データの加工</a></li>
+<li class="chapter" data-level="4.1.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#分析-2"><i class="fa fa-check"></i><b>4.1.2</b> 分析</a>
+<ul>
+<li class="chapter" data-level="4.1.2.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れオスと群れ外オスの攻撃を区別しない"><i class="fa fa-check"></i><b>4.1.2.1</b> 群れオスと群れ外オスの攻撃を区別しない</a>
+<ul>
+<li class="chapter" data-level="4.1.2.1.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#モデリング-4"><i class="fa fa-check"></i><b>4.1.2.1.1</b> モデリング</a></li>
+<li class="chapter" data-level="4.1.2.1.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#結果まとめ"><i class="fa fa-check"></i><b>4.1.2.1.2</b> 結果まとめ</a></li>
+</ul></li>
+<li class="chapter" data-level="4.1.2.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れオス群れ外オスを区別"><i class="fa fa-check"></i><b>4.1.2.2</b> 群れオス・群れ外オスを区別</a>
+<ul>
+<li class="chapter" data-level="4.1.2.2.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れオスからの攻撃頻度"><i class="fa fa-check"></i><b>4.1.2.2.1</b> 群れオスからの攻撃頻度</a></li>
+<li class="chapter" data-level="4.1.2.2.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れ外オスからの攻撃頻度"><i class="fa fa-check"></i><b>4.1.2.2.2</b> 群れ外オスからの攻撃頻度</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#全生起サンプリングを用いた分析"><i class="fa fa-check"></i><b>4.2</b> 全生起サンプリングを用いた分析</a>
+<ul>
+<li class="chapter" data-level="4.2.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#データの加工-3"><i class="fa fa-check"></i><b>4.2.1</b> データの加工</a></li>
+<li class="chapter" data-level="4.2.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#分析-3"><i class="fa fa-check"></i><b>4.2.2</b> 分析</a>
+<ul>
+<li class="chapter" data-level="4.2.2.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れオスと群れ外オスを区別しない"><i class="fa fa-check"></i><b>4.2.2.1</b> 群れオスと群れ外オスを区別しない</a>
+<ul>
+<li class="chapter" data-level="4.2.2.1.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#モデリング-6"><i class="fa fa-check"></i><b>4.2.2.1.1</b> モデリング</a></li>
+</ul></li>
+<li class="chapter" data-level="4.2.2.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れオス群れ外オスを区別する"><i class="fa fa-check"></i><b>4.2.2.2</b> 群れオス・群れ外オスを区別する</a>
+<ul>
+<li class="chapter" data-level="4.2.2.2.1" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れオスからの攻撃頻度-1"><i class="fa fa-check"></i><b>4.2.2.2.1</b> 群れオスからの攻撃頻度</a></li>
+<li class="chapter" data-level="4.2.2.2.2" data-path="factor_of_aggression.html"><a href="factor_of_aggression.html#群れ外オスからの攻撃頻度-1"><i class="fa fa-check"></i><b>4.2.2.2.2</b> 群れ外オスからの攻撃頻度</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="basic_data.html"><a href="basic_data.html"><i class="fa fa-check"></i><b>5</b> 基礎情報の算出と図表の作成</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="basic_data.html"><a href="basic_data.html#群れ追跡時間調査日数発情メス数群れ外オス数のデータ"><i class="fa fa-check"></i><b>5.1</b> 群れ追跡時間、調査日数、発情メス数、群れ外オス数のデータ</a></li>
+<li class="chapter" data-level="5.2" data-path="basic_data.html"><a href="basic_data.html#発情メス数と群れ外オス数の関連"><i class="fa fa-check"></i><b>5.2</b> 発情メス数と群れ外オス数の関連</a></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="RGsuc.html"><a href="RGsuc.html"><i class="fa fa-check"></i><b>6</b> 休息は何分連続で行われる?</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="RGsuc.html"><a href="RGsuc.html#データの加工-4"><i class="fa fa-check"></i><b>6.1</b> データの加工</a></li>
+<li class="chapter" data-level="6.2" data-path="RGsuc.html"><a href="RGsuc.html#分析-4"><i class="fa fa-check"></i><b>6.2</b> 分析</a>
+<ul>
+<li class="chapter" data-level="6.2.1" data-path="RGsuc.html"><a href="RGsuc.html#モデリング-9"><i class="fa fa-check"></i><b>6.2.1</b> モデリング</a>
+<ul>
+<li class="chapter" data-level="6.2.1.1" data-path="RGsuc.html"><a href="RGsuc.html#モデルチェック-6"><i class="fa fa-check"></i><b>6.2.1.1</b> モデルチェック</a></li>
+<li class="chapter" data-level="6.2.1.2" data-path="RGsuc.html"><a href="RGsuc.html#結果の確認-6"><i class="fa fa-check"></i><b>6.2.1.2</b> 結果の確認</a></li>
+</ul></li>
+<li class="chapter" data-level="6.2.2" data-path="RGsuc.html"><a href="RGsuc.html#モデル比較"><i class="fa fa-check"></i><b>6.2.2</b> モデル比較</a></li>
+<li class="chapter" data-level="6.2.3" data-path="RGsuc.html"><a href="RGsuc.html#モデルからの予測値と実データの比較"><i class="fa fa-check"></i><b>6.2.3</b> モデルからの予測値と実データの比較。</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="sessioninfo.html"><a href="sessioninfo.html"><i class="fa fa-check"></i>実行環境</a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">交尾期の群れ内の凝集性に関する分析</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="基礎情報の算出と図表の作成" class="section level1 hasAnchor" number="5">
+<h1><span class="header-section-number">5</span> 基礎情報の算出と図表の作成<a href="basic_data.html#基礎情報の算出と図表の作成" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>本章では、群れ追跡時間や個体追跡時間などの基本的なデータをまとめる。</p>
+<div id="群れ追跡時間調査日数発情メス数群れ外オス数のデータ" class="section level2 hasAnchor" number="5.1">
+<h2><span class="header-section-number">5.1</span> 群れ追跡時間、調査日数、発情メス数、群れ外オス数のデータ<a href="basic_data.html#群れ追跡時間調査日数発情メス数群れ外オス数のデータ" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>発情メス数と群れ外オス数については、300分以上追跡した日のデータのみを使用した。</p>
+<div class="sourceCode" id="cb133"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb133-1"><a href="basic_data.html#cb133-1" tabindex="-1"></a>base_all <span class="sc">%&gt;%</span></span>
+<span id="cb133-2"><a href="basic_data.html#cb133-2" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">season =</span> <span class="fu">ifelse</span>(<span class="fu">month</span>(date) <span class="sc">&gt;=</span> <span class="dv">9</span> <span class="sc">&amp;</span> <span class="fu">month</span>(date) <span class="sc">&lt;=</span> <span class="dv">12</span>,<span class="st">&quot;m&quot;</span>,<span class="st">&quot;nm&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-3"><a href="basic_data.html#cb133-3" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">study_period =</span> <span class="fu">str_c</span>(season,<span class="fu">str_sub</span>(<span class="fu">year</span>(date),<span class="dv">3</span>,<span class="dv">4</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-4"><a href="basic_data.html#cb133-4" tabindex="-1"></a>  <span class="fu">left_join</span>(male_all <span class="sc">%&gt;%</span> </span>
+<span id="cb133-5"><a href="basic_data.html#cb133-5" tabindex="-1"></a>              <span class="fu">filter</span>(ntm <span class="sc">==</span> <span class="st">&quot;1&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-6"><a href="basic_data.html#cb133-6" tabindex="-1"></a>              <span class="fu">group_by</span>(date) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-7"><a href="basic_data.html#cb133-7" tabindex="-1"></a>              <span class="fu">summarise</span>(<span class="at">no_ntm =</span> <span class="fu">sum</span>(presence, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-8"><a href="basic_data.html#cb133-8" tabindex="-1"></a>              <span class="fu">ungroup</span>(), <span class="at">by =</span> <span class="st">&quot;date&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-9"><a href="basic_data.html#cb133-9" tabindex="-1"></a>  <span class="fu">left_join</span>(female_all <span class="sc">%&gt;%</span> </span>
+<span id="cb133-10"><a href="basic_data.html#cb133-10" tabindex="-1"></a>              <span class="fu">group_by</span>(date) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-11"><a href="basic_data.html#cb133-11" tabindex="-1"></a>              <span class="fu">summarise</span>(<span class="at">no_est =</span> <span class="fu">sum</span>(rs2, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-12"><a href="basic_data.html#cb133-12" tabindex="-1"></a>              <span class="fu">ungroup</span>(), <span class="at">by =</span> <span class="st">&quot;date&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-13"><a href="basic_data.html#cb133-13" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date =</span> <span class="fu">as_date</span>(date)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-14"><a href="basic_data.html#cb133-14" tabindex="-1"></a>  <span class="fu">filter</span>(date <span class="sc">!=</span> <span class="st">&quot;2019-11-22&quot;</span> <span class="sc">&amp;</span> date <span class="sc">!=</span> <span class="st">&quot;2019-11-23&quot;</span>) <span class="ot">-&gt;</span> base_all_b</span>
+<span id="cb133-15"><a href="basic_data.html#cb133-15" tabindex="-1"></a>  </span>
+<span id="cb133-16"><a href="basic_data.html#cb133-16" tabindex="-1"></a>base_all_b <span class="sc">%&gt;%</span> </span>
+<span id="cb133-17"><a href="basic_data.html#cb133-17" tabindex="-1"></a>  <span class="fu">filter</span>(study_period <span class="sc">!=</span> <span class="st">&quot;nm20&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-18"><a href="basic_data.html#cb133-18" tabindex="-1"></a>  <span class="fu">group_by</span>(study_period) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-19"><a href="basic_data.html#cb133-19" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">N =</span> <span class="fu">n</span>(),</span>
+<span id="cb133-20"><a href="basic_data.html#cb133-20" tabindex="-1"></a>            <span class="at">follow =</span> <span class="fu">str_c</span>(<span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>,<span class="fu">mean</span>(duration)),<span class="st">&quot; ± &quot;</span>,<span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>, <span class="fu">sd</span>(duration)))) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-21"><a href="basic_data.html#cb133-21" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="ot">-&gt;</span> follow_summary</span>
+<span id="cb133-22"><a href="basic_data.html#cb133-22" tabindex="-1"></a>            </span>
+<span id="cb133-23"><a href="basic_data.html#cb133-23" tabindex="-1"></a>base_all_b <span class="sc">%&gt;%</span> </span>
+<span id="cb133-24"><a href="basic_data.html#cb133-24" tabindex="-1"></a>  <span class="fu">filter</span>(duration <span class="sc">&gt;=</span> <span class="dv">300</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-25"><a href="basic_data.html#cb133-25" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">str_detect</span>(study_period, <span class="st">&quot;nm&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-26"><a href="basic_data.html#cb133-26" tabindex="-1"></a>  <span class="fu">group_by</span>(study_period) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-27"><a href="basic_data.html#cb133-27" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_est =</span> <span class="fu">str_c</span>(<span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>,<span class="fu">mean</span>(no_est, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),<span class="st">&quot; ± &quot;</span>,<span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>, <span class="fu">sd</span>(no_est, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))),</span>
+<span id="cb133-28"><a href="basic_data.html#cb133-28" tabindex="-1"></a>            <span class="at">range_est =</span> <span class="fu">str_c</span>(<span class="fu">min</span>(no_est),<span class="st">&quot;–&quot;</span>,<span class="fu">max</span>(no_est)),</span>
+<span id="cb133-29"><a href="basic_data.html#cb133-29" tabindex="-1"></a>            <span class="at">mean_ntm =</span> <span class="fu">str_c</span>(<span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>,<span class="fu">mean</span>(no_ntm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),<span class="st">&quot; ± &quot;</span>,<span class="fu">sprintf</span>(<span class="st">&quot;%.2f&quot;</span>, <span class="fu">sd</span>(no_ntm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))),</span>
+<span id="cb133-30"><a href="basic_data.html#cb133-30" tabindex="-1"></a>            <span class="at">range_ntm =</span> <span class="fu">str_c</span>(<span class="fu">min</span>(no_ntm),<span class="st">&quot;–&quot;</span>,<span class="fu">max</span>(no_ntm))) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-31"><a href="basic_data.html#cb133-31" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mean_ntm =</span> <span class="fu">ifelse</span>(<span class="fu">str_detect</span>(mean_ntm,<span class="st">&quot;NA&quot;</span>),<span class="cn">NA</span>,mean_ntm))<span class="ot">-&gt;</span> daily_summary</span>
+<span id="cb133-32"><a href="basic_data.html#cb133-32" tabindex="-1"></a></span>
+<span id="cb133-33"><a href="basic_data.html#cb133-33" tabindex="-1"></a><span class="fu">left_join</span>(follow_summary, daily_summary) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-34"><a href="basic_data.html#cb133-34" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">season =</span> <span class="fu">ifelse</span>(<span class="fu">str_detect</span>(study_period,<span class="st">&quot;nm&quot;</span>),<span class="st">&quot;非交尾期&quot;</span>,<span class="st">&quot;交尾期&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb133-35"><a href="basic_data.html#cb133-35" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">str_c</span>(<span class="st">&quot;20&quot;</span>,<span class="fu">str_sub</span>(study_period,<span class="sc">-</span><span class="dv">2</span>,<span class="sc">-</span><span class="dv">1</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-36"><a href="basic_data.html#cb133-36" tabindex="-1"></a>  <span class="fu">select</span>(season, year, <span class="fu">everything</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-37"><a href="basic_data.html#cb133-37" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>study_period) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-38"><a href="basic_data.html#cb133-38" tabindex="-1"></a>  <span class="fu">replace_na</span>(<span class="fu">list</span>(<span class="at">mean_est =</span> <span class="st">&quot;-&quot;</span>, <span class="at">range_est =</span> <span class="st">&quot;-&quot;</span>, <span class="at">mean_ntm =</span> <span class="st">&quot;-&quot;</span>, <span class="at">range_ntm =</span> <span class="st">&quot;-&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-39"><a href="basic_data.html#cb133-39" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="st">&quot;季節&quot;</span> <span class="ot">=</span> <span class="dv">1</span>,<span class="st">&quot;観察年&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;観察日数&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot; 平均±SD&quot;</span> <span class="ot">=</span> <span class="dv">4</span>, <span class="st">&quot;平均±SD&quot;</span> <span class="ot">=</span> <span class="dv">5</span>, <span class="st">&quot;範囲&quot;</span> <span class="ot">=</span> <span class="dv">6</span>, <span class="st">&quot;平均±SD &quot;</span> <span class="ot">=</span> <span class="dv">7</span>, <span class="st">&quot;範囲 &quot;</span> <span class="ot">=</span> <span class="dv">8</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-40"><a href="basic_data.html#cb133-40" tabindex="-1"></a>  <span class="fu">flextable</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb133-41"><a href="basic_data.html#cb133-41" tabindex="-1"></a>  <span class="fu">add_header_row</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&quot;&quot;</span>,<span class="st">&quot;群れ追跡時間&quot;</span>,<span class="st">&quot;発情メス数&quot;</span>,<span class="st">&quot;群れ外オス数&quot;</span>), <span class="at">colwidth =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-42"><a href="basic_data.html#cb133-42" tabindex="-1"></a>  <span class="fu">merge_v</span>(<span class="at">j =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-43"><a href="basic_data.html#cb133-43" tabindex="-1"></a>  <span class="fu">theme_zebra</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb133-44"><a href="basic_data.html#cb133-44" tabindex="-1"></a>  <span class="fu">align</span>(<span class="at">j =</span> <span class="dv">3</span><span class="sc">:</span><span class="dv">8</span>, <span class="at">part =</span> <span class="st">&quot;all&quot;</span>, <span class="at">align =</span> <span class="st">&quot;center&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-45"><a href="basic_data.html#cb133-45" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">font</span>(<span class="at">part =</span> <span class="st">&quot;body&quot;</span>, <span class="at">j =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">8</span>, <span class="at">fontname =</span> <span class="st">&quot;Times New Roman&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-46"><a href="basic_data.html#cb133-46" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">font</span>(<span class="at">part =</span> <span class="st">&quot;body&quot;</span>, <span class="at">j =</span> <span class="dv">1</span>, <span class="at">fontname =</span> <span class="st">&quot;Yu Mincho&quot;</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb133-47"><a href="basic_data.html#cb133-47" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">font</span>(<span class="at">part =</span> <span class="st">&quot;header&quot;</span>, <span class="at">j =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>, <span class="at">fontname =</span> <span class="st">&quot;Yu Mincho&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-48"><a href="basic_data.html#cb133-48" tabindex="-1"></a>  <span class="fu">set_table_properties</span>(<span class="at">layout =</span> <span class="st">&quot;autofit&quot;</span>,</span>
+<span id="cb133-49"><a href="basic_data.html#cb133-49" tabindex="-1"></a>                       <span class="at">width =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-50"><a href="basic_data.html#cb133-50" tabindex="-1"></a>  <span class="fu">width</span>(<span class="at">j=</span><span class="fu">c</span>(<span class="dv">4</span>), <span class="at">width =</span> <span class="fl">1.5</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb133-51"><a href="basic_data.html#cb133-51" tabindex="-1"></a>  <span class="fu">width</span>(<span class="at">j =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">7</span>), <span class="at">width =</span> <span class="fl">1.3</span>)<span class="ot">-&gt;</span> table_daily_summary</span>
+<span id="cb133-52"><a href="basic_data.html#cb133-52" tabindex="-1"></a></span>
+<span id="cb133-53"><a href="basic_data.html#cb133-53" tabindex="-1"></a>table_daily_summary</span></code></pre></div>
+<div class="tabwid"><style>.cl-079f8978{table-layout:auto;width:100%;}.cl-0797e448{font-family:'Yu Mincho';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-0797e45c{font-family:'Yu Mincho';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-0797e466{font-family:'Times New Roman';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-079af43a{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-079af444{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-079b04a2{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04a3{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04ac{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04ad{background-color:rgba(207, 207, 207, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04b6{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04b7{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04c0{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04ca{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04cb{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04cc{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04cd{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-079b04d4{background-color:rgba(239, 239, 239, 1.00);vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing='true' class='cl-079f8978'><thead><tr style="overflow-wrap:break-word;"><th  colspan="3"class="cl-079b04a2"><p class="cl-079af43a"><span class="cl-0797e448"></span></p></th><th class="cl-079b04ac"><p class="cl-079af444"><span class="cl-0797e448">群れ追跡時間</span></p></th><th  colspan="2"class="cl-079b04ad"><p class="cl-079af444"><span class="cl-0797e448">発情メス数</span></p></th><th  colspan="2"class="cl-079b04ad"><p class="cl-079af444"><span class="cl-0797e448">群れ外オス数</span></p></th></tr><tr style="overflow-wrap:break-word;"><th class="cl-079b04b6"><p class="cl-079af43a"><span class="cl-0797e448">季節</span></p></th><th class="cl-079b04b6"><p class="cl-079af43a"><span class="cl-0797e448">観察年</span></p></th><th class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e448">観察日数</span></p></th><th class="cl-079b04c0"><p class="cl-079af444"><span class="cl-0797e448"> 平均±SD</span></p></th><th class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e448">平均±SD</span></p></th><th class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e448">範囲</span></p></th><th class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e448">平均±SD </span></p></th><th class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e448">範囲 </span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td  rowspan="4"class="cl-079b04cb"><p class="cl-079af43a"><span class="cl-0797e45c">交尾期</span></p></td><td class="cl-079b04cb"><p class="cl-079af43a"><span class="cl-0797e466">2018</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">62</span></p></td><td class="cl-079b04cd"><p class="cl-079af444"><span class="cl-0797e466">518.55 ± 239.76</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">5.72 ± 3.61</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">0–11</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-079b04b6"><p class="cl-079af43a"><span class="cl-0797e466">2019</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">65</span></p></td><td class="cl-079b04c0"><p class="cl-079af444"><span class="cl-0797e466">529.94 ± 280.94</span></p></td><td class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e466">1.84 ± 1.65</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">0–5</span></p></td><td class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e466">6.20 ± 1.76</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">3–10</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-079b04cb"><p class="cl-079af43a"><span class="cl-0797e466">2020</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">90</span></p></td><td class="cl-079b04cd"><p class="cl-079af444"><span class="cl-0797e466">591.53 ± 163.80</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">0.70 ± 0.96</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">0–3</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">4.35 ± 2.22</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">0–9</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-079b04b6"><p class="cl-079af43a"><span class="cl-0797e466">2021</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">89</span></p></td><td class="cl-079b04c0"><p class="cl-079af444"><span class="cl-0797e466">569.62 ± 195.56</span></p></td><td class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e466">4.46 ± 4.02</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">0–13</span></p></td><td class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e466">7.90 ± 2.46</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">1–13</span></p></td></tr><tr style="overflow-wrap:break-word;"><td  rowspan="3"class="cl-079b04cb"><p class="cl-079af43a"><span class="cl-0797e45c">非交尾期</span></p></td><td class="cl-079b04cb"><p class="cl-079af43a"><span class="cl-0797e466">2019</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">47</span></p></td><td class="cl-079b04cd"><p class="cl-079af444"><span class="cl-0797e466">530.98 ± 265.83</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-079b04b6"><p class="cl-079af43a"><span class="cl-0797e466">2021</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">48</span></p></td><td class="cl-079b04c0"><p class="cl-079af444"><span class="cl-0797e466">602.71 ± 187.63</span></p></td><td class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04ca"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04b7"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-079b04cb"><p class="cl-079af43a"><span class="cl-0797e466">2022</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">44</span></p></td><td class="cl-079b04cd"><p class="cl-079af444"><span class="cl-0797e466">568.07 ± 216.75</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04d4"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td><td class="cl-079b04cc"><p class="cl-079af444"><span class="cl-0797e466">-</span></p></td></tr></tbody></table></div>
+<div class="sourceCode" id="cb134"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb134-1"><a href="basic_data.html#cb134-1" tabindex="-1"></a><span class="co"># save_as_image(table_daily_summary, &quot;table/table_daily_summary.png&quot;)</span></span></code></pre></div>
+</div>
+<div id="発情メス数と群れ外オス数の関連" class="section level2 hasAnchor" number="5.2">
+<h2><span class="header-section-number">5.2</span> 発情メス数と群れ外オス数の関連<a href="basic_data.html#発情メス数と群れ外オス数の関連" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>300分以上追跡した日について、発情メス数と群れ外オス数の関連を調べる。</p>
+<div class="sourceCode" id="cb135"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb135-1"><a href="basic_data.html#cb135-1" tabindex="-1"></a>base_all_b <span class="sc">%&gt;%</span> </span>
+<span id="cb135-2"><a href="basic_data.html#cb135-2" tabindex="-1"></a>  <span class="fu">filter</span>(duration <span class="sc">&gt;=</span> <span class="dv">300</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb135-3"><a href="basic_data.html#cb135-3" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">str_detect</span>(study_period,<span class="st">&quot;nm&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb135-4"><a href="basic_data.html#cb135-4" tabindex="-1"></a>  <span class="fu">filter</span>(study_period <span class="sc">!=</span> <span class="st">&quot;m18&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb135-5"><a href="basic_data.html#cb135-5" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">study_period =</span> <span class="fu">str_c</span>(<span class="st">&quot;20&quot;</span>,<span class="fu">str_sub</span>(study_period,<span class="sc">-</span><span class="dv">2</span>,<span class="sc">-</span><span class="dv">1</span>),<span class="st">&quot;年&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb135-6"><a href="basic_data.html#cb135-6" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> no_est, <span class="at">y =</span> no_ntm))<span class="sc">+</span></span>
+<span id="cb135-7"><a href="basic_data.html#cb135-7" tabindex="-1"></a>  <span class="fu">geom_count</span>()<span class="sc">+</span></span>
+<span id="cb135-8"><a href="basic_data.html#cb135-8" tabindex="-1"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">7</span>))<span class="sc">+</span></span>
+<span id="cb135-9"><a href="basic_data.html#cb135-9" tabindex="-1"></a>  <span class="fu">scale_size_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">2</span>,<span class="dv">10</span>,<span class="at">by =</span><span class="dv">2</span>))<span class="sc">+</span></span>
+<span id="cb135-10"><a href="basic_data.html#cb135-10" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;発情メス数&quot;</span>, <span class="at">y =</span> <span class="st">&quot;群</span><span class="sc">\n</span><span class="st">れ</span><span class="sc">\n</span><span class="st">外</span><span class="sc">\n</span><span class="st">オ</span><span class="sc">\n</span><span class="st">ス</span><span class="sc">\n</span><span class="st">数&quot;</span>, <span class="at">size =</span> <span class="st">&quot;観察日数&quot;</span>)<span class="sc">+</span></span>
+<span id="cb135-11"><a href="basic_data.html#cb135-11" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>)<span class="sc">+</span></span>
+<span id="cb135-12"><a href="basic_data.html#cb135-12" tabindex="-1"></a>  <span class="fu">facet_rep_wrap</span>(<span class="sc">~</span>study_period, <span class="at">repeat.tick.labels =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb135-13"><a href="basic_data.html#cb135-13" tabindex="-1"></a>                 <span class="at">scales =</span> <span class="st">&quot;free&quot;</span>, <span class="at">ncol =</span> <span class="dv">2</span>)<span class="sc">+</span></span>
+<span id="cb135-14"><a href="basic_data.html#cb135-14" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> scales<span class="sc">::</span><span class="fu">pretty_breaks</span>(<span class="fl">4.5</span>))<span class="sc">+</span></span>
+<span id="cb135-15"><a href="basic_data.html#cb135-15" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">15</span>,<span class="at">by=</span><span class="dv">2</span>))<span class="sc">+</span></span>
+<span id="cb135-16"><a href="basic_data.html#cb135-16" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">strip.background =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb135-17"><a href="basic_data.html#cb135-17" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="dv">0</span>,</span>
+<span id="cb135-18"><a href="basic_data.html#cb135-18" tabindex="-1"></a>                                  <span class="at">family =</span> <span class="st">&quot;Yu Mincho&quot;</span>),</span>
+<span id="cb135-19"><a href="basic_data.html#cb135-19" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>,</span>
+<span id="cb135-20"><a href="basic_data.html#cb135-20" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="fl">0.7</span>,<span class="fl">0.2</span>),</span>
+<span id="cb135-21"><a href="basic_data.html#cb135-21" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">0</span>,</span>
+<span id="cb135-22"><a href="basic_data.html#cb135-22" tabindex="-1"></a>                                    <span class="at">vjust =</span> <span class="fl">0.5</span>,</span>
+<span id="cb135-23"><a href="basic_data.html#cb135-23" tabindex="-1"></a>                                    <span class="at">family =</span> <span class="st">&quot;Yu Mincho&quot;</span>),</span>
+<span id="cb135-24"><a href="basic_data.html#cb135-24" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">family =</span> <span class="st">&quot;Yu Mincho&quot;</span>),</span>
+<span id="cb135-25"><a href="basic_data.html#cb135-25" tabindex="-1"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">family =</span> <span class="st">&quot;Yu Mincho&quot;</span>),</span>
+<span id="cb135-26"><a href="basic_data.html#cb135-26" tabindex="-1"></a>        <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="st">&quot;Times New Roman&quot;</span>),</span>
+<span id="cb135-27"><a href="basic_data.html#cb135-27" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">family =</span> <span class="st">&quot;Times New Roman&quot;</span>)) <span class="ot">-&gt;</span> p_est_ntm</span>
+<span id="cb135-28"><a href="basic_data.html#cb135-28" tabindex="-1"></a></span>
+<span id="cb135-29"><a href="basic_data.html#cb135-29" tabindex="-1"></a><span class="co"># ggsave(&quot;figure/p_est_ntm.png&quot;, p_est_ntm, width = 180, height = 180, units = &quot;mm&quot;, dpi = 600)</span></span></code></pre></div>
+<div class="sourceCode" id="cb136"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb136-1"><a href="basic_data.html#cb136-1" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="st">&quot;figure/p_est_ntm.png&quot;</span>)</span></code></pre></div>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:unnamed-chunk-129"></span>
+<img src="figure/p_est_ntm.png" alt="発情メス数と群れ外オス数の関連" width="2126" />
+<p class="caption">
+図5.1: 発情メス数と群れ外オス数の関連
+</p>
+</div>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="factor_of_aggression.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="RGsuc.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"search": {
+"engine": "fuse",
+"options": null
+},
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>
