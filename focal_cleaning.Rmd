@@ -58,10 +58,13 @@ datatable(focal_raw,
 
 ## データの加工  
 ### メス情報の追加  
-#### 追跡個体の発情状態と各観察日の確認メス数の追加  
+#### 追跡個体の発情状態と各観察日の確認メス数、最大メス数の追加  
 各観察日に群れで確認されたメス数(6歳以上)と、追跡個体の発情状態の列を追加する。  
 
 ```{r}
+female_time <- read_csv("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/combined_data/female_pre_all.csv") %>% 
+  mutate(date = as_date(date))
+
 female18 %>%
   bind_rows(female19) %>% 
   bind_rows(female20) %>% 
@@ -70,10 +73,21 @@ female18 %>%
 female_all %>% 
   filter(age >= 6) %>% 
   group_by(date) %>% 
-  summarise(no_female = sum(presence)) -> no_female
+  summarise(no_female = sum(presence)) %>% 
+  ungroup() -> no_female
+
+female_time %>% 
+  pivot_longer(cols = Kur:Har,
+               names_to = "femaleID",
+               values_to = "presence") %>% 
+  filter(is.na(presence)|(presence != "DD" & presence != "NS")) %>% 
+  group_by(date) %>% 
+  summarise(max_female = n()) %>% 
+  ungroup() -> max_female
 
 focal_raw %>% 
   left_join(no_female, by = "date") %>% 
+  left_join(max_female, by = "date") %>% 
   left_join(female_all %>% dplyr::select(date, femaleID, rank, rs2),
             by = c("date", "subject" = "femaleID")) -> focal_raw_b
 ```

@@ -2,15 +2,16 @@
 以下の分析では、オスからの攻撃のリスクが群れの凝集性に影響するかを検討する。  
 
 ## データの加工  
-まず、休息集団内のメス数と、3m以内のメス数、5m以内のメス数(2019は除く)を算出する。また、近接に*TY*または*IT*がいたかを示した列を作成する。    
+まず、休息集団内のメス数と、3m以内のメス数、5m以内のメス数(2019は除く)を算出する。また、近接に群れオスがいたかを示した列を作成する。  
 ```{r}
+## 近接メス情報の作成  
+adult18 <- unique(female18 %>% filter(age >= 6) %>% .$femaleID)
 adult19 <- unique(female19 %>% filter(age >= 6) %>% .$femaleID)
 adult20 <- unique(female20 %>% filter(age >= 6) %>% .$femaleID)
 adult21 <- unique(female21 %>% filter(age >= 6) %>% .$femaleID)
 
 focal_raw_fin %>% 
-  filter(study_period != "m18") %>% 
-   separate(x0_1m, into = str_c("x0_1m",1:11), sep = ",") %>% 
+  separate(x0_1m, into = str_c("x0_1m",1:11), sep = ",") %>% 
   separate(x1_3m, into = str_c("x1_3m",1:15), sep = ",") %>% 
   separate(x3_5m, into = str_c("x3_5m",1:16), sep = ",") %>% 
   separate(x5_10m, into = str_c("x5_10m", 1:9), sep = ",")  %>% 
@@ -23,7 +24,7 @@ focal_raw_fin %>%
                                           ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) %>% 
   filter(RG == "1") %>% 
   filter(!is.na(ID)) %>% 
-  filter((study_period == "m19" & ID %in% adult19)|(study_period == "m20" & ID %in% adult20)|(study_period == "m21" & ID %in% adult21)) -> focal_prox
+  filter((study_period == "m18" & ID %in% adult18)|(study_period == "m19" & ID %in% adult19)|(study_period == "m20" & ID %in% adult20)|(study_period == "m21" & ID %in% adult21)) -> focal_prox
 
 ## 休息集団
 RG_female <- focal_prox %>% 
@@ -45,20 +46,31 @@ x5m_female <- focal_prox %>%
   summarise(x5m_female = n()) %>% 
   ungroup()
 
+
 ## 元データに結合  
 focal_raw_fin %>% 
+  filter(RG == "1") %>% 
   left_join(RG_female, by = c("date","no_focal","time")) %>% 
   left_join(x3m_female, by = c("date","no_focal","time")) %>% 
   left_join(x5m_female, by = c("date","no_focal","time")) %>% 
   replace_na(list(RGfemale = 0, x3m_female = 0, x5m_female)) %>% 
   replace_na(list(x0_1m = "NA",x1_3m = "NA", x3_5m = "NA", x5_10m = "NA")) %>% 
+  mutate(RGfemale_plus1 = RGfemale + 1) %>% 
+  ## TYとITの情報を追加  
   mutate(TY_10m = ifelse(str_detect(x0_1m,"TY")|str_detect(x1_3m,"TY")|str_detect(x3_5m,"TY")|str_detect(x5_10m,"TY"),1,0),
          TY_5m = ifelse(str_detect(x0_1m,"TY")|str_detect(x1_3m,"TY")|str_detect(x3_5m,"TY"),1,0),
          TY_3m = ifelse(str_detect(x0_1m,"TY")|str_detect(x1_3m,"TY"),1,0)) %>% 
   mutate(IT_10m = ifelse(str_detect(x0_1m,"IT")|str_detect(x1_3m,"IT")|str_detect(x3_5m,"IT")|str_detect(x5_10m,"IT"),1,0),
          IT_5m = ifelse(str_detect(x0_1m,"IT")|str_detect(x1_3m,"IT")|str_detect(x3_5m,"IT"),1,0),
-         IT_3m = ifelse(str_detect(x0_1m,"IT")|str_detect(x1_3m,"IT"),1,0))-> focal_raw_prox
+         IT_3m = ifelse(str_detect(x0_1m,"IT")|str_detect(x1_3m,"IT"),1,0)) %>% 
+  mutate(KR_10m = ifelse(str_detect(x0_1m,"KR")|str_detect(x1_3m,"KR")|str_detect(x3_5m,"KR")|str_detect(x5_10m,"KR"),1,0),
+         KR_5m = ifelse(str_detect(x0_1m,"KR")|str_detect(x1_3m,"KR")|str_detect(x3_5m,"KR"),1,0),
+         KR_3m = ifelse(str_detect(x0_1m,"KR")|str_detect(x1_3m,"KR"),1,0)) %>% 
+  mutate(LK_10m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK")|str_detect(x3_5m,"LK")|str_detect(x5_10m,"LK"),1,0),
+         LK_5m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK")|str_detect(x3_5m,"LK"),1,0),
+         LK_3m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK"),1,0)) -> focal_raw_prox
 ```
+
 
 作成したデータは以下の通り。  
 ```{r}
@@ -67,82 +79,142 @@ datatable(focal_raw_prox,
           filter = list(position = "top"))
 ```
 
+## 5分ごとの休息集団サイズを使用  
+### 群れ外オス数やTY、ITの有無と休息集団サイズの関連  
 
+#### データの加工  
+**非発情メスについて**5分ごとの休息集団サイズを抽出する。なお、6歳以上のメスが50%以上観察できたときのみのデータを使用する。  
 ```{r}
-focal_raw_prox %>% 
-  filter(RG == "1") %>% 
-  filter(TY == "1") %>% 
-  filter(study_period != "m18") %>% 
-  filter(rs2 == "0") %>% 
-  group_by(date,no_focal, no_ntm,no_est, rs2, study_period) %>% 
-  summarise(N = sum(TY_10m),
-            n = n()) %>%
-  ungroup() %>% 
-  filter(n >= 10) %>% 
-  ggplot(aes(x = no_ntm, y = N/n))+
-  geom_count()+
-  facet_wrap(~study_period)+
-  geom_smooth(method = "glm")
-
 a <- focal_raw_prox %>% 
-  filter(rs2 == 0) %>% 
+  mutate(rate_female = no_female/max_female) %>% 
+  filter(max_female >= 0.5) %>% 
+  filter(consort <= 2) %>% 
+  replace_na(list(hud = 0)) %>% 
+  filter(hud != "1") %>% 
   filter(RG == "1") %>% 
-  filter(RGsuc3 == "1") %>% 
   filter(!is.na(RGfemale)) %>% 
-  filter(time %% 5 == 4) %>% 
-  filter(study_period != "m18") %>% 
-  mutate(female_rate = RGfemale/no_female)
+  filter(time %% 5 == 0) %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE)) %>% 
+  mutate(N = 1:n())  %>% 
+  mutate(TY2 = ifelse(TY == "1" & TY_10m == "1", "a",
+                      ifelse(TY == "1" & TY_10m == "0", "b",
+                             ifelse(TY == "0", "c", "NA"))))
 
 a %>% 
+  group_by(study_period, TY2) %>% 
+  summarise(N = n())
+
+a %>% 
+  filter(study_period != "m18" & TY2 != "NA") %>% 
   ggplot(aes(x = no_ntm, y = RGfemale/no_female))+
-  geom_count(aes(color = TY_10m))+
-  facet_grid(~TY_10m)+
+  geom_count(aes(color = TY2))+
+  facet_grid(study_period~ TY2, scales = "free")+
   geom_smooth(method = "glm")+
   theme(aspect.ratio = 0.5)
 
-a$RGfemale
-
-r <- brm(data = a %>% mutate(date = as.factor(date)),
-           RGfemale|trials(no_female) ~ no_ntm*TY_10m +  no_est + study_period + (1|subject) + (1|no_focal) + (1|date),
-           prior = c(prior(student_t(4,0,10), class = "b"),
-                           prior(student_t(4,0,10), class = "Intercept"),
-                           prior(student_t(3,0,4), class = "sd")),
-                 control=list(adapt_delta = 0.9999, max_treedepth = 22),
-           family = "binomial",
+r <- brm(data = a %>% mutate(date = as.factor(date)) %>% filter(study_period != "m18" & TY2 != "NA"),
+           RGfemale|trials(no_female-1) ~ cen_ntm*TY2 +  no_est + study_period + (1|subject) + (1|no_focal),
+           control=list(adapt_delta = 0.9999, max_treedepth = 22),
+           family = "beta_binomial",
            backend = "cmdstanr")
 
 d <- dh_check_brms(r)
 
 testZeroInflation(d)
 
-estimate_slopes(r,
-                trend = "no_ntm",
-                at = c("TY_10m = c(0,1)"))
+check_collinearity(r)
 
-pp_check(r)
+estimate_slopes(r,
+                trend = "cen_ntm",
+                at = c("TY2"))
 
 estimate_contrasts(r,
-                contrast = "TY_10m = c(0,1)",
-                at = c("no_ntm"))
+                   contrast = "TY2")
+
+fit <- posterior_samples(r)
+
+mcmc_combo(fit)
+
+ggmcmc(r)
 
 model_parameters(r)
+
+plotQQunif(r)
+
+r2 <- brm(data = a %>% mutate(date = as.factor(date)) %>% filter(TY != "2" & IT != "2"),
+           x3m_female|trials(no_female) ~ cen_ntm*TY + cen_ntm*IT + no_est + study_period + (1|subject) + (1|no_focal),
+           control=list(adapt_delta = 0.9999, max_treedepth = 22),
+           family = "binomial",
+           backend = "cmdstanr")
+```
+
+
+
+## 各個体追跡セッションを1つのサンプルとする  
+各個体追跡セッションにおける平均休息集団サイズと平均周辺個体数を算出する。ただし、少なくとも地上での休息が10分以上ある日のみを抽出する。    
+```{r}
+focal_raw_prox %>%
+  filter(study_period != "m18") %>% 
+  filter(RG == "1") %>% 
+  filter(RGsuc3 == "1") %>% 
+  mutate(TY = as.factor(TY),
+         IT = as.factor(IT)) %>% 
+  ungroup() %>% 
+  group_by(no_focal, subject, date, consort, rs2, TY, IT, no_ntm, no_est, study_period, no_female) %>% 
+  summarise(N = n(),
+            sum = sum(RGfemale, na.rm = TRUE),
+            max = max(RGfemale),
+            sum_5m = sum(x5m_female)) %>%
+  ungroup() %>% 
+  filter(consort <= 2, N >= 15) %>% 
+  replace_na(list(IT = "0")) %>% 
+  filter(TY != "2" & IT != "2") %>% 
+  mutate(cen_ntm = no_ntm- mean(no_ntm, na.rm = TRUE),
+         cen_est = no_est - mean(no_est, na.rm = TRUE),
+         logN = log(N)) -> RGsize_sum
+```
+
+```{r}
+RGsize_sum %>% 
+  filter(rs2 == "0") %>% 
+  ggplot(aes(x = no_ntm, y = sum_5m/N))+
+  geom_count(aes(color = TY, shape = as.factor(rs2)))+
+  facet_grid(study_period~TY)+
+  geom_smooth(aes(color = TY),
+              method = "glm")
 ```
 
 
 ```{r}
-focal_prox %>%
-  filter(RG == "1") %>% 
-  filter(TY != "2") %>% 
-  mutate(TY = as.factor(TY)) %>% 
-  group_by(no_female, subject, rs2, TY, IT, no_ntm, no_est) %>% 
-  summarise(N = n(),
-            mean = mean(RGsize/no_female, na.rm = TRUE),
-            max = max(RGsize)) %>%
-  ungroup() %>% 
-  filter(rs2 == "0", N >= 10) %>% 
-  ggplot(aes(x = no_ntm, y = mean))+
-  geom_count(aes(color = TY))+
-  geom_smooth(aes(color = TY))
-```
+r <-  brm(data = RGsize_sum %>% mutate(date = as.factor(date)),
+          sum ~ cen_est*TY + cen_est*IT + no_ntm + study_period + no_female + offset(logN) + (1|subject) + (1|no_focal) + (1|date) + (1|no_focal),
+          control=list(adapt_delta = 0.9999, max_treedepth = 22),
+           iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+          family = negbinomial,
+          backend = "cmdstanr")
 
+d <- dh_check_brms(r)
+
+testZeroInflation(d)
+
+check_collinearity(r)
+
+estimate_slopes(r,
+                trend = "cen_est",
+                at = c("IT = c(0,1)"))
+
+fit <- posterior_samples(r)
+
+mcmc_combo(fit)
+
+ggmcmc(r)
+
+model_parameters(r)
+
+hist(log(RGsize_sum$mean))
+```
 

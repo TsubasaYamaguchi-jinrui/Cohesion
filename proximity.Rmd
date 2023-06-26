@@ -24,14 +24,15 @@ focal18_prox %>%
   filter(ID %in% adult$femaleID | ID %in% c("TY","IT","LK","KR")) %>% 
   group_by(date,no_focal, time) %>% 
   summarise(N = n() + 1) %>% 
-  ungroup()-> a
+  ungroup() %>% 
+  replace_na(list(N = 1)) -> a
 
 focal_raw %>%
   filter(study_period == "m18") %>% 
   left_join(a, by = c("date","time","no_focal")) %>% 
   filter(RG == "1") %>% 
   mutate(ok = ifelse(RGsize == N, 1,0)) %>% 
-  select(no_focal, date,subject, time,activity,RGsize, x0_1m, x1_3m,x3_5m,x5_10m,N,ok) -> ok
+  select(no_focal, date,subject, time,activity,T_G, RGsize, x0_1m, x1_3m,x3_5m,x5_10m,N,ok) -> ok
 
 write_csv(ok,"ok.csv")
 

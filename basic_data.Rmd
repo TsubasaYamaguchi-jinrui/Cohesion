@@ -100,4 +100,27 @@ base_all_b %>%
 knitr::include_graphics("figure/p_est_ntm.png")
 ```
 
+## 個体追跡データ  
+```{r}
+focal_raw_fin %>% 
+  group_by(no_focal, subject, study_period, r2) %>% 
+  summarise(dur = max(time)) %>% 
+  ungroup() %>% 
+  group_by(study_period, subject, rs2) %>% 
+  summarise(N = n(),
+            mean = mean(duration),
+            sd = sd(duration)) %>% 
+  flextable() %>% 
+  add_header_row(values = c("","群れ追跡時間","発情メス数","群れ外オス数"), colwidth = c(3,1,2,2)) %>% 
+  merge_v(j = 1) %>% 
+  theme_zebra() %>% 
+  align(j = 3:8, part = "all", align = "center") %>% 
+  flextable::font(part = "body", j = 2:8, fontname = "Times New Roman") %>% 
+  flextable::font(part = "body", j = 1, fontname = "Yu Mincho") %>%  
+  flextable::font(part = "header", j = 1:8, fontname = "Yu Mincho") %>% 
+  set_table_properties(layout = "autofit",
+                       width = 1) %>% 
+  width(j=c(4), width = 1.5) %>% 
+  width(j = c(5,7), width = 1.3)
+```
 

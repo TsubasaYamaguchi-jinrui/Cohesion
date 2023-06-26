@@ -23,7 +23,6 @@ focal_raw_fin %>%
   ungroup() %>% 
   mutate(no_agg = no_agg1 + no_agg2) %>% 
   select(-no_agg1, -no_agg2) %>% 
-  filter(study_period != "m18") %>% 
   mutate(logdur = log(dur/60)) %>% 
   replace_na(list(IT = 0)) %>% 
   mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE),
@@ -79,6 +78,71 @@ datatable(focal_sum,
           filter = list(position ="top"))
 ```
 <br/>  
+
+
+### データの分布の確認  
+#### 攻撃するオスのID  
+
+#### 調査年ごとの被攻撃頻度  
+調査期間ごとに、発情メス・非発情メスが群れオス・群れ外オスから攻撃された頻度を図示する。  
+```{r}
+focal_sum_ntm %>% 
+  filter(dur >= 60) %>% 
+  pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
+  ggplot(aes(x = study_period, y = agg*60/dur))+
+  geom_violin(aes(fill = type), bw = 0.25,
+              color = "black")+
+  geom_boxplot(aes(color = type),
+               fill = "grey85",
+               outlier.alpha = 0,
+               width = 0.1,
+               position = position_dodge(0.9))+
+  stat_summary(aes(fill = type),
+               fun = "mean",
+               position = position_dodge(0.9),
+               shape = 18,
+               size = 0.75)+
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
+       fill = "", color = "")+
+  facet_rep_wrap(~rs2, repeat.tick.labels = TRUE,
+                 ncol = 2,
+                 labeller = as_labeller(c("0" = "非発情メス","1" = "発情メス")))+
+  theme_bw(base_size = 15)+
+  scale_fill_manual(values = c("grey54","white"),
+                    labels = c("群れ外オス","群れオス"))+
+  scale_color_manual(values = c("grey83","grey83"),
+                    labels = c("群れ外オス","群れオス"))+
+  scale_x_discrete(labels = c("2018年","2019年","2020年","2021年"))+
+  theme(aspect.ratio = 0.7,
+        strip.background = element_blank(),
+        strip.text = element_text(family = "Yu Mincho",
+                                  hjust = 0),
+        axis.text.x =  element_text(family = "Yu Mincho"),
+        axis.title.y = element_text(family = "Yu Mincho",
+                                    angle = 0,
+                                    vjust = 0.5),
+        legend.text = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman")) -> p_agg_studyperiod
+
+# ggsave("figure/p_agg_studyperiod.png", p_agg_studyperiod, width = 270, height = 110, units = "mm", dpi = 600)
+```
+
+以下の通り。  
+```{r fig-aggcomp, echo=FALSE, out.width="60%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_agg_studyperiod.png")
+```
+<br/>  
+
+```{r}
+focal_sum_ntm %>% 
+  filter(study_period != "m18") %>% 
+  filter(dur >= 60) %>% 
+  pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
+  ggplot(aes(x = no_ntm, y = agg*60/dur))+
+  geom_count()+
+  facet_grid(rs2~study_period,
+             scales = "free")
+```
 
 ### 分析  
 #### 群れオスと群れ外オスの攻撃を区別しない    
