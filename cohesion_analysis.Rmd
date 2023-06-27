@@ -71,6 +71,21 @@ focal_raw_fin %>%
          LK_3m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK"),1,0)) -> focal_raw_prox
 ```
 
+その日群れ内にいた血縁個体数を書く。  
+```{r}
+female_time %>% 
+  pivot_longer(cols = Kur:Har,
+               names_to = "femaleID",
+               values_to = "presence") %>% 
+  ## 死亡個体と確認時間不明個体、非対称個体(6歳未満)は除く
+  filter(presence != "?" & presence != "DD" & presence != "NS" & presence != "NA") -> female_time_long
+
+focal_raw_fin %>% 
+  distinct(date, no_focal, subject) %>% 
+  left_join(female_all %>% select(date, femaleID, presence)) -> a
+```
+
+
 
 作成したデータは以下の通り。  
 ```{r}
@@ -147,8 +162,6 @@ r2 <- brm(data = a %>% mutate(date = as.factor(date)) %>% filter(TY != "2" & IT 
            family = "binomial",
            backend = "cmdstanr")
 ```
-
-
 
 ## 各個体追跡セッションを1つのサンプルとする  
 各個体追跡セッションにおける平均休息集団サイズと平均周辺個体数を算出する。ただし、少なくとも地上での休息が10分以上ある日のみを抽出する。    

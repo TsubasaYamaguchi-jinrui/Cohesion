@@ -216,6 +216,7 @@ focal_raw_g %>%
   mutate(aggressor_focal = ifelse(if_victim1 == 1 & if_victim2 == 1, str_c(aggressor1,",",aggressor2),
                                   ifelse(if_victim1 == 1 , aggressor1,
                                          ifelse(if_victim2 == 1, aggressor2,NA)))) %>% 
+  ## aggressor2には、追跡個体が同時刻に2頭から攻撃を受けたときのみ値が入る　　
   separate(aggressor_focal, into = c("aggressor_focal1","aggressor_focal2"), sep = ",")-> focal_raw_fin
 ```
 

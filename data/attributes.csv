@@ -4,7 +4,7 @@ m18,Kit,7,2
 m18,Koh,12,3
 m18,Kur,17,4
 m18,Kun,6,5
-m18,Kor,8,6
+m18,Kol,8,6
 m18,Ntr,10,7
 m18,Ten,10,8
 m18,Aka,12,9
@@ -21,7 +21,7 @@ nm19,Kit,7,2
 nm19,Koh,12,3
 nm19,Kur,17,4
 nm19,Kun,6,5
-nm19,Kor,8,6
+nm19,Kol,8,6
 nm19,Ntr,10,7
 nm19,Ten,10,8
 nm19,Aka,12,9
@@ -38,7 +38,7 @@ m19,Kit,8,2
 m19,Koh,13,3
 m19,Kur,18,4
 m19,Kun,7,5
-m19,Kor,9,6
+m19,Kol,9,6
 m19,Ntr,11,7
 m19,Ten,11,8
 m19,Aka,13,9
@@ -56,7 +56,7 @@ nm20,Kit,8,2
 nm20,Koh,13,3
 nm20,Kur,18,4
 nm20,Kun,7,5
-nm20,Kor,9,6
+nm20,Kol,9,6
 nm20,Ntr,11,7
 nm20,Ten,11,8
 nm20,Aka,13,9
@@ -74,7 +74,7 @@ m20,Kit,9,2
 m20,Koh,14,3
 m20,Coc,6,4
 m20,Kun,8,5
-m20,Kor,10,6
+m20,Kol,10,6
 m20,Ntr,12,7
 m20,Ntm,6,8
 m20,Ten,12,9
@@ -95,7 +95,7 @@ nm21,Kit,9,2
 nm21,Koh,14,3
 nm21,Coc,6,4
 nm21,Kun,8,5
-nm21,Kor,10,6
+nm21,Kol,10,6
 nm21,Ntr,12,7
 nm21,Ntm,6,8
 nm21,Ten,12,9
@@ -117,7 +117,7 @@ m21,Kit,10,3
 m21,Koh,15,4
 m21,Coc,7,5
 m21,Kun,9,6
-m21,Kor,11,7
+m21,Kol,11,7
 m21,Ntr,13,8
 m21,Ntm,7,9
 m21,Ten,13,10
@@ -140,7 +140,7 @@ nm22,Kit,10,3
 nm22,Koh,15,4
 nm22,Coc,7,5
 nm22,Kun,9,6
-nm22,Kor,11,7
+nm22,Kol,11,7
 nm22,Ntr,13,8
 nm22,Ntm,7,9
 nm22,Ten,13,10

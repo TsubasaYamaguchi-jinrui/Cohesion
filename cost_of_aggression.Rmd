@@ -785,7 +785,7 @@ agg_injury_all %>%
         legend.title = element_text(family = "Yu Mincho"),
         aspect.ratio = 1) -> p_agginj_all
 
-#ggsave("figure/p_agginj_all.png", p_agginj_all, width = 240, height = 120, units = "mm", dpi = 600)
+# ggsave("figure/p_agginj_all.png", p_agginj_all, width = 240, height = 120, units = "mm", dpi = 600)
 ```
 
 結果は以下のようになる(図\@ref(fig:fig-agginj-all))。  

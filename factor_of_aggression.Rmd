@@ -42,7 +42,7 @@ focal_raw_fin %>%
   left_join(males, by = c("study_period", "aggressor_focal2" = "maleID")) %>% 
   rename(ntm2 = ntm) %>% 
   mutate(ntm2 = ifelse(is.na(aggressor_focal2),NA,
-                       ifelse(is.na(ntm2) & !is.na(aggressor_focal2),1,ntm1))) -> focal_raw_fin_b
+                       ifelse(is.na(ntm2) & !is.na(aggressor_focal2),1,ntm2))) -> focal_raw_fin_b
   
 focal_raw_fin_b %>% 
   filter(agg_focal == "1") %>% 
@@ -80,9 +80,7 @@ datatable(focal_sum,
 <br/>  
 
 
-### データの分布の確認  
-#### 攻撃するオスのID  
-
+### データの確認  
 #### 調査年ごとの被攻撃頻度  
 調査期間ごとに、発情メス・非発情メスが群れオス・群れ外オスから攻撃された頻度を図示する。  
 ```{r}
@@ -95,13 +93,14 @@ focal_sum_ntm %>%
   geom_boxplot(aes(color = type),
                fill = "grey85",
                outlier.alpha = 0,
-               width = 0.1,
+               width = 0.2,
+               size = 0.2,
                position = position_dodge(0.9))+
   stat_summary(aes(fill = type),
                fun = "mean",
                position = position_dodge(0.9),
                shape = 18,
-               size = 0.75)+
+               size = 0.5)+
   labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
        fill = "", color = "")+
   facet_rep_wrap(~rs2, repeat.tick.labels = TRUE,
@@ -110,7 +109,7 @@ focal_sum_ntm %>%
   theme_bw(base_size = 15)+
   scale_fill_manual(values = c("grey54","white"),
                     labels = c("群れ外オス","群れオス"))+
-  scale_color_manual(values = c("grey83","grey83"),
+  scale_color_manual(values = c("grey10","grey10"),
                     labels = c("群れ外オス","群れオス"))+
   scale_x_discrete(labels = c("2018年","2019年","2020年","2021年"))+
   theme(aspect.ratio = 0.7,
@@ -122,26 +121,149 @@ focal_sum_ntm %>%
                                     angle = 0,
                                     vjust = 0.5),
         legend.text = element_text(family = "Yu Mincho"),
-        axis.text.y = element_text(family = "Times New Roman")) -> p_agg_studyperiod
+        axis.text.y = element_text(family = "Times New Roman")) -> p_focalagg_studyperiod
 
-# ggsave("figure/p_agg_studyperiod.png", p_agg_studyperiod, width = 270, height = 110, units = "mm", dpi = 600)
+# ggsave("figure/p_focalagg_studyperiod.png", p_focalagg_studyperiod, width = 270, height = 110, units = "mm", dpi = 600)
 ```
 
 以下の通り。  
-```{r fig-aggcomp, echo=FALSE, out.width="60%", fig.cap="調査期間ごとの被攻撃頻度"}
-knitr::include_graphics("figure/p_agg_studyperiod.png")
+```{r fig-aggfocal-studyperiod, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_focalagg_studyperiod.png")
 ```
 <br/>  
+
+#### オスごとの攻撃頻度  
+##### データの加工  
+```{r}
+focal_raw_fin_b %>% 
+  mutate(aggressor1 = ifelse(ntm1 == "1", "NT", aggressor_focal1)) %>% 
+  mutate(aggressor2 = ifelse(ntm2 == "1", "NT", aggressor_focal2)) -> focal_raw_maleID
+  
+focal_raw_maleID %>% 
+  filter(agg_focal == "1") %>% 
+  group_by(no_focal, subject, aggressor1) %>% 
+  summarise(agg_ID = n()) %>% 
+  ungroup() %>% 
+  rename(aggressor = aggressor1) -> focal_agg_ID1
+
+focal_raw_maleID %>% 
+  filter(agg_focal == "1") %>% 
+  group_by(no_focal, subject, aggressor2) %>% 
+  summarise(agg_ID = n()) %>% 
+  ungroup() %>% 
+  drop_na(aggressor2) %>% 
+  rename(aggressor = aggressor2) -> focal_agg_ID2
+
+focal_agg_ID1 %>% 
+  bind_rows(focal_agg_ID2) %>% 
+  group_by(no_focal, aggressor) %>% 
+  summarise(agg = sum(agg_ID)) %>% 
+  ungroup() -> focal_agg_ID 
+  
+focal_agg_ID  %>% 
+  right_join(focal_sum_ntm) %>%
+  drop_na(aggressor) %>% 
+  replace_na(list(agg = 0)) %>% 
+  select(no_focal, aggressor) %>% 
+  complete(no_focal, aggressor) %>% 
+  left_join(focal_agg_ID) %>% 
+  replace_na(list(agg = 0)) %>% 
+  right_join(focal_sum_ntm) %>% 
+  mutate(inc = ifelse(study_period %in% c("m18","m19","m20") & aggressor == "KM"| study_period == "m21" & aggressor == "IT"|
+                        study_period %in% c("m20","m21") & aggressor == "LK",0,1)) %>% 
+  filter(inc == "1") %>% 
+  mutate(inc2 = ifelse(TY == "0" & aggressor == "TY"|IT == "0" & aggressor == "IT", 0,1)) %>% 
+  filter(inc2 == "1")-> focal_sum_ID
+```
+
+##### 図示  
+```{r}
+N <- focal_sum_ID %>% 
+  mutate(rs2 = as.factor(rs2)) %>% 
+  mutate(rate_agg = agg*60/dur) %>% 
+  mutate(study_period = str_c("20",str_sub(study_period,2,3),"年")) %>% 
+  mutate(aggressor = fct_relevel(aggressor,"TY","IT","LK","KR","KM","NT")) %>% 
+  filter(dur >= 60) %>% 
+  group_by(study_period, aggressor, rs2) %>% 
+  summarise(N = n(),
+            y = max(rate_agg + 0.3)) %>% 
+  ungroup()
+
+focal_sum_ID %>% 
+  mutate(rs2 = as.factor(rs2)) %>% 
+  filter(dur >= 60) %>% 
+  mutate(rate_agg = agg*60/dur) %>% 
+  mutate(study_period = str_c("20",str_sub(study_period,2,3),"年")) %>% 
+  mutate(aggressor = fct_relevel(aggressor,"TY","IT","LK","KR","KM","NT")) %>% 
+  ggplot(aes(x = aggressor, y = rate_agg))+
+  geom_violin(aes(fill = rs2), bw = 0.25,
+              color = "black",
+              scale = "width")+
+  geom_boxplot(aes(color = rs2),
+               fill = "grey85",
+               outlier.alpha = 0,
+               width = 0.25,
+               position = position_dodge(0.9),
+               size = 0.2)+
+  stat_summary(aes(fill = rs2),
+               fun = "mean",
+               position = position_dodge(0.9),
+               shape = 18,
+               size = 0.35)+
+  geom_text(data = N,
+            aes(y = y, color = rs2, label = N),
+            stat = "identity",
+            position = position_dodge(0.9),
+            family = "Times New Roman",
+            size = 3) +
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
+       fill = "", color = "")+
+  facet_rep_wrap(~study_period, repeat.tick.labels = TRUE,
+                 ncol = 2) +
+  theme_bw(base_size = 15)+
+  scale_fill_manual(values = c("grey54","white"),
+                    labels = c("非発情メス","発情メス"))+
+  scale_color_manual(values = c("grey10","grey10"),
+                    labels = c("非発情メス","発情メス"))+
+  theme(aspect.ratio = 0.5,
+        strip.background = element_blank(),
+        strip.text = element_text(family = "Yu Mincho",
+                                  hjust = 0),
+        axis.text.x =  element_text(family = "Yu Mincho"),
+        axis.title.y = element_text(family = "Yu Mincho",
+                                    angle = 0,
+                                    vjust = 0.5),
+        legend.text = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman")) -> p_focalagg_maleID
+
+# ggsave("figure/p_focalagg_maleID.png", p_focalagg_maleID, width = 270, height = 130, units = "mm", dpi = 600)
+```
+
+以下の通り。  
+```{r fig-aggfocal-maleID, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_focalagg_maleID.png")
+```
 
 ```{r}
 focal_sum_ntm %>% 
   filter(study_period != "m18") %>% 
   filter(dur >= 60) %>% 
+  filter(rs2 == "0") %>% 
   pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
-  ggplot(aes(x = no_ntm, y = agg*60/dur))+
+  ggplot(aes(x = no_est, y = agg*60/dur, color = type))+
   geom_count()+
-  facet_grid(rs2~study_period,
-             scales = "free")
+  facet_grid(study_period~type,
+             scales = "free") 
+
+focal_sum_ntm %>% 
+  filter(study_period != "m18") %>% 
+  filter(dur >= 60) %>% 
+  filter(rs2 == "1") %>% 
+  pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
+  ggplot(aes(x = no_est, y = agg*60/dur, color = type))+
+  geom_count()+
+  facet_grid(study_period~type,
+             scales = "free") 
 ```
 
 ### 分析  
@@ -374,7 +496,8 @@ testZeroInflation(check_m_aggfocal_tm_ntm)
 
 VIFも発情メス数についてはやや高いものの、10以下には収まっている。    
 ```{r}
-check_collinearity(m_aggfocal_tm_est)
+# できなくなった?
+# check_collinearity(m_aggfocal_tm_est)
 check_collinearity(m_aggfocal_tm_ntm)
 ```
 
@@ -687,6 +810,150 @@ agg_ao_all_d %>%
 datatable(agg_ao_all_fin,
           options = list(scrollX = 30), 
           filter = list(position ="top"))
+```
+
+### データの確認  
+#### 調査年ごとの被攻撃頻度  
+```{r}
+agg_ao_all_fin %>% 
+  pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
+  ggplot(aes(x = study_period, y = agg*60/duration))+
+  geom_violin(aes(fill = type), bw = 0.07,
+              color = "black")+
+  geom_boxplot(aes(color = type),
+               fill = "grey85",
+               outlier.alpha = 0,
+               width = 0.2,
+               size = 0.2,
+               position = position_dodge(0.9))+
+  stat_summary(aes(fill = type),
+               fun = "mean",
+               position = position_dodge(0.9),
+               shape = 18,
+               size = 0.5)+
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
+       fill = "", color = "")+
+  facet_rep_wrap(~rs2, repeat.tick.labels = TRUE,
+                 ncol = 2,
+                 labeller = as_labeller(c("0" = "非発情メス","1" = "発情メス")))+
+  theme_bw(base_size = 15)+
+  scale_fill_manual(values = c("grey54","white"),
+                    labels = c("群れ外オス","群れオス"))+
+  scale_color_manual(values = c("grey10","grey10"),
+                    labels = c("群れ外オス","群れオス"))+
+  scale_x_discrete(labels = c("2018年","2019年","2020年","2021年"))+
+  theme(aspect.ratio = 0.7,
+        strip.background = element_blank(),
+        strip.text = element_text(family = "Yu Mincho",
+                                  hjust = 0),
+        axis.text.x =  element_text(family = "Yu Mincho"),
+        axis.title.y = element_text(family = "Yu Mincho",
+                                    angle = 0,
+                                    vjust = 0.5),
+        legend.text = element_text(family = "Yu Mincho"),
+        plot.title = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman")) -> p_aggao_studyperiod
+
+# ggsave("figure/p_aggao_studyperiod.png", p_aggao_studyperiod, width = 270, height = 110, units = "mm", dpi = 600)
+```
+
+#### オスごとの攻撃頻度  
+##### データの加工  
+```{r}
+aggression_all_b %>% 
+  drop_na(ntm) %>% 
+  mutate(aggressor2 = ifelse(ntm == "0", aggressor, "NT")) %>% 
+  group_by(date, aggressor2, femaleID) %>% 
+  summarise(agg = n()) %>% 
+  ungroup() -> aggression_dyad
+
+female_dur %>% 
+  tidyr::expand(data.frame(maleID = c("TY","IT","LK","KR","KM","NT")), nesting(date,study_period,femaleID,dur)) %>% 
+  left_join(aggression_dyad, by = c("date","maleID" = "aggressor2","femaleID")) %>% 
+  replace_na(list(agg = 0)) %>% 
+  left_join(hr_presence, by = "date") %>% 
+  mutate(inc = ifelse(maleID == "TY" & TY == "0"|maleID == "IT" & IT == "0",0,1)) %>% 
+  filter(inc == "1") %>% 
+  mutate(inc2 = ifelse(study_period %in% c("m18","m19","m20") & maleID == "KM"| study_period == "m21" & maleID == "IT"|
+                        study_period %in% c("m20","m21") & maleID == "LK",0,1)) %>% 
+  filter(inc2 == "1") %>% 
+  left_join(base_all %>% select(date,duration)) %>% 
+  left_join(female_all %>% select(date, femaleID, rs2)) %>% 
+  drop_na(rs2) -> aggao_dyad
+```
+
+##### 図示  
+```{r}
+N_ao <- aggao_dyad %>% 
+  mutate(rs2 = as.factor(rs2)) %>% 
+  filter(dur >= 300) %>% 
+  filter(duration >= 300) %>% 
+  mutate(rate_agg = agg*60/duration) %>% 
+  mutate(study_period = str_c("20",str_sub(study_period,2,3),"年")) %>% 
+  mutate(maleID = fct_relevel(maleID,"TY","IT","LK","KR","KM","NT")) %>% 
+  group_by(study_period, maleID, rs2) %>% 
+  summarise(N = n(),
+            y = max(rate_agg + 0.3)) %>% 
+  ungroup()
+
+aggao_dyad %>% 
+  filter(dur >= 300) %>% 
+  filter(duration >= 300) %>% 
+  mutate(rs2 = as.factor(rs2)) %>% 
+  mutate(rate_agg = agg*60/duration) %>% 
+  mutate(study_period = str_c("20",str_sub(study_period,2,3),"年")) %>% 
+  mutate(maleID = fct_relevel(maleID,"TY","IT","LK","KR","KM","NT")) %>% 
+  ggplot(aes(x = maleID, y = rate_agg))+
+  geom_violin(aes(fill = rs2), bw = 0.05,
+              color = "black",
+              scale = "width")+
+  geom_boxplot(aes(color = rs2),
+               fill = "grey85",
+               outlier.alpha = 0,
+               width = 0.25,
+               position = position_dodge(0.9),
+               size = 0.2)+
+  stat_summary(aes(fill = rs2),
+               fun = "mean",
+               position = position_dodge(0.9),
+               shape = 18,
+               size = 0.35)+
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
+       fill = "", color = "")+
+  facet_rep_wrap(~study_period, repeat.tick.labels = TRUE,
+                 ncol = 2) +
+  coord_cartesian(ylim = c(0,1))+
+  theme_bw(base_size = 15)+
+  scale_fill_manual(values = c("grey54","white"),
+                    labels = c("非発情メス","発情メス"))+
+  scale_color_manual(values = c("grey10","grey10"),
+                    labels = c("非発情メス","発情メス"))+
+  theme(aspect.ratio = 0.5,
+        strip.background = element_blank(),
+        strip.text = element_text(family = "Yu Mincho",
+                                  hjust = 0),
+        axis.text.x =  element_text(family = "Yu Mincho"),
+        axis.title.y = element_text(family = "Yu Mincho",
+                                    angle = 0,
+                                    vjust = 0.5),
+        legend.text = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman")) -> p_aggao_maleID
+
+# ggsave("figure/p_aggao_maleID.png", p_aggao_maleID, width = 270, height = 130, units = "mm", dpi = 600)
+```
+
+以下の通り。  
+```{r fig-aggao-maleID, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_aggao_maleID.png")
+```
+
+```{r}
+agg_ao_all_fin %>% 
+  filter(rs2 == "0") %>% 
+  pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to = "agg") %>% 
+  ggplot(aes(x = no_est, y = agg*60/duration))+
+  geom_count()+
+  facet_wrap(type~study_period)
 ```
 
 ### 分析  
