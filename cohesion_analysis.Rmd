@@ -22,38 +22,57 @@ focal_raw_fin %>%
                             ifelse(str_detect(proximity,"x1_3m"),"x1_3m",
                                    ifelse(str_detect(proximity,"x3_5m"),"x3_5m",
                                           ifelse(str_detect(proximity,"x5_10m"),"x5_10m","NA"))))) %>% 
-  filter(RG == "1") %>% 
-  filter(!is.na(ID)) %>% 
-  filter((study_period == "m18" & ID %in% adult18)|(study_period == "m19" & ID %in% adult19)|(study_period == "m20" & ID %in% adult20)|(study_period == "m21" & ID %in% adult21)) -> focal_prox
+  filter(!is.na(ID)) -> focal_prox
 
 ## 休息集団
 RG_female <- focal_prox %>% 
+  filter(RG == "1") %>% 
+  filter((study_period == "m18" & ID %in% adult18)|(study_period == "m19" & ID %in% adult19)|
+           (study_period == "m20" & ID %in% adult20)|(study_period == "m21" & ID %in% adult21)) %>% 
   group_by(date, no_focal, time) %>% 
   summarise(RGfemale = n()) %>% 
   ungroup()
 
-## 3m近接  
-x3m_female <- focal_prox %>% 
+## 休息集団内の発情メス数
+focal_prox %>% 
+  filter(RG == "1") %>% 
+  filter((study_period == "m18" & ID %in% adult18)|(study_period == "m19" & ID %in% adult19)|
+           (study_period == "m20" & ID %in% adult20)|(study_period == "m21" & ID %in% adult21)) %>% 
+  select(date, no_focal, time, ID) %>% 
+  left_join(female_all %>% select(date, femaleID, rs2), by = c("date","ID" = "femaleID")) %>% 
+  filter(rs2 == "1") %>% 
+  group_by(date, no_focal, time) %>% 
+  summarise(RGest = n()) -> RGest_female 
+
+## 3m、5m近接  
+focal_prox %>% 
+  mutate(ID = str_replace(ID, "\\(F\\)","")) %>% 
+  mutate(ID = str_replace(ID, "\\(M\\)","")) %>% 
+  mutate(ID = str_replace(ID, "\\(O\\)","")) %>% 
+  mutate(ID = str_replace(ID, "\\(N\\)","")) %>% 
+  mutate(ID = str_replace(ID, "\\(n\\)","")) %>% 
+  filter((study_period == "m18" & ID %in% adult18)|(study_period == "m19" & ID %in% adult19)|
+           (study_period == "m20" & ID %in% adult20)|(study_period == "m21" & ID %in% adult21)) -> focal_prox_all
+  
+focal_prox_all %>% 
   filter(proximity %in% c("x0_1m","x1_3m")) %>% 
   group_by(date, no_focal, time) %>% 
   summarise(x3m_female = n()) %>% 
-  ungroup()
+  ungroup() -> x3m_female
 
-## 5m近接  
-x5m_female <- focal_prox %>% 
+focal_prox_all %>% 
   filter(proximity %in% c("x0_1m","x1_3m","x3_5m")) %>% 
   group_by(date, no_focal, time) %>% 
   summarise(x5m_female = n()) %>% 
-  ungroup()
-
+  ungroup() -> x5m_female
 
 ## 元データに結合  
 focal_raw_fin %>% 
-  filter(RG == "1") %>% 
   left_join(RG_female, by = c("date","no_focal","time")) %>% 
+  left_join(RGest_female, by = c("date","no_focal","time")) %>% 
   left_join(x3m_female, by = c("date","no_focal","time")) %>% 
   left_join(x5m_female, by = c("date","no_focal","time")) %>% 
-  replace_na(list(RGfemale = 0, x3m_female = 0, x5m_female)) %>% 
+  replace_na(list(RGfemale = 0, RGest = 0, x3m_female = 0, x5m_female)) %>% 
   replace_na(list(x0_1m = "NA",x1_3m = "NA", x3_5m = "NA", x5_10m = "NA")) %>% 
   mutate(RGfemale_plus1 = RGfemale + 1) %>% 
   ## TYとITの情報を追加  
@@ -68,28 +87,65 @@ focal_raw_fin %>%
          KR_3m = ifelse(str_detect(x0_1m,"KR")|str_detect(x1_3m,"KR"),1,0)) %>% 
   mutate(LK_10m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK")|str_detect(x3_5m,"LK")|str_detect(x5_10m,"LK"),1,0),
          LK_5m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK")|str_detect(x3_5m,"LK"),1,0),
-         LK_3m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK"),1,0)) -> focal_raw_prox
+         LK_3m = ifelse(str_detect(x0_1m,"LK")|str_detect(x1_3m,"LK"),1,0)) %>% 
+  left_join(base_all %>% select(date,temp_am,temp_pm)) -> focal_raw_prox
 ```
 
 その日群れ内にいた血縁個体数を書く。  
 ```{r}
-female_time %>% 
-  pivot_longer(cols = Kur:Har,
-               names_to = "femaleID",
-               values_to = "presence") %>% 
-  ## 死亡個体と確認時間不明個体、非対称個体(6歳未満)は除く
-  filter(presence != "?" & presence != "DD" & presence != "NS" & presence != "NA") -> female_time_long
+kin <- read_csv("data/kin.csv")
 
 focal_raw_fin %>% 
-  distinct(date, no_focal, subject) %>% 
-  left_join(female_all %>% select(date, femaleID, presence)) -> a
+  distinct(study_period, date,no_focal, subject) %>% 
+  left_join(female_all %>% select(date, femaleID, presence)) %>% 
+  filter(!(subject == femaleID)) %>% 
+  left_join(kin, by = c("study_period", "subject","femaleID")) %>% 
+  mutate(kin_presence = ifelse(presence == "1" & kin > 0.0625,1,0)) %>% 
+  left_join(att, by = c("study_period","femaleID")) %>% 
+  filter(age >= 6) %>% 
+  group_by(no_focal, date, subject) %>%
+  summarise(no_kin = sum(kin_presence)) %>% 
+  ungroup() -> focal_numkin
+
+focal_raw_prox %>% 
+  left_join(focal_numkin, by = c("no_focal","date","subject")) -> focal_raw_prox_b
 ```
 
+その日観察したオトナメスへの攻撃頻度も追加する。各観察日に観察された群れオス/群れ外オスからの攻撃の頻度を算出し、個体追跡データにくっつける。    
+```{r}
+aggression_all %>% 
+  left_join(males, by = c("aggressor" = "maleID","study_period")) %>% 
+  drop_na(ntm) %>% 
+  group_by(date, ntm) %>% 
+  summarise(agg = n()) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = ntm,
+              values_from = agg) %>% 
+  rename("agg_tm" = 2, "agg_ntm" = 3) %>% 
+  left_join(base_all %>% select(date, duration)) %>% 
+  filter(duration >= 300) %>% 
+  replace_na(list(agg_tm = 0, agg_ntm = 0)) %>% 
+  mutate(rate_tm = agg_tm*60/duration,
+         rate_ntm = agg_ntm*60/duration) -> aggression_daily
 
+aggression_all %>% 
+  group_by(date) %>% 
+  summarise(agg = n()) %>% 
+  ungroup() %>% 
+  left_join(base_all %>% select(date, duration)) %>% 
+  filter(duration >= 300) %>% 
+  replace_na(list(agg = 0)) %>% 
+  mutate(rate_agg = agg*60/duration) -> aggression_daily_all
+  
+
+focal_raw_prox_b %>% 
+  left_join(aggression_daily, by = "date") %>% 
+  left_join(aggression_daily_all, by = "date") -> focal_raw_prox_fin
+```
 
 作成したデータは以下の通り。  
 ```{r}
-datatable(focal_raw_prox,
+datatable(focal_raw_prox_fin,
           options = list(scrollX = 80),
           filter = list(position = "top"))
 ```
@@ -98,50 +154,110 @@ datatable(focal_raw_prox,
 ### 群れ外オス数やTY、ITの有無と休息集団サイズの関連  
 
 #### データの加工  
-**非発情メスについて**5分ごとの休息集団サイズを抽出する。なお、6歳以上のメスが50%以上観察できたときのみのデータを使用する。  
+5分ごとの休息集団サイズを抽出する。なお、以下の条件を満たすもののみを抽出した。  
+
+- 6歳以上のメスが50%以上観察できたときのみのデータを使用する。   
+- 3位以下のオスまたは
+
 ```{r}
-a <- focal_raw_prox %>% 
+focal_raw_prox_fin %>% 
   mutate(rate_female = no_female/max_female) %>% 
   filter(max_female >= 0.5) %>% 
   filter(consort <= 2) %>% 
   replace_na(list(hud = 0)) %>% 
   filter(hud != "1") %>% 
-  filter(RG == "1") %>% 
-  filter(!is.na(RGfemale)) %>% 
+  filter(RG == "1")  %>% 
   filter(time %% 5 == 0) %>% 
+  filter(rs2 == "0") %>% 
   mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE)) %>% 
   mutate(N = 1:n())  %>% 
   mutate(TY2 = ifelse(TY == "1" & TY_10m == "1", "a",
                       ifelse(TY == "1" & TY_10m == "0", "b",
-                             ifelse(TY == "0", "c", "NA"))))
+                             ifelse(TY == "0", "c", "NA")))) -> focal_rest
 
-a %>% 
-  group_by(study_period, TY2) %>% 
-  summarise(N = n())
+focal_rest %>% 
+  mutate(a = (RGfemale - RGest)/(no_female - no_est)) %>% 
+  ggplot(aes(x = no_ntm, y = (RGfemale - RGest)/(no_female - no_est)))+
+  geom_count()+
+  facet_wrap(study_period~KR_10m)+
+  geom_smooth(method = "glm")
 
-a %>% 
-  filter(study_period != "m18" & TY2 != "NA") %>% 
-  ggplot(aes(x = no_ntm, y = RGfemale/no_female))+
-  geom_count(aes(color = TY2))+
-  facet_grid(study_period~ TY2, scales = "free")+
-  geom_smooth(method = "glm")+
-  theme(aspect.ratio = 0.5)
+## 2019年  
+focal_rest19 <- focal_rest %>% 
+  filter(study_period == "m19") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE),
+         cen_est = no_est - mean(no_est, na.rm = TRUE))
 
-r <- brm(data = a %>% mutate(date = as.factor(date)) %>% filter(study_period != "m18" & TY2 != "NA"),
-           RGfemale|trials(no_female-1) ~ cen_ntm*TY2 +  no_est + study_period + (1|subject) + (1|no_focal),
-           control=list(adapt_delta = 0.9999, max_treedepth = 22),
-           family = "beta_binomial",
-           backend = "cmdstanr")
 
+m_RGsize19 <- brm(data = focal_rest19 %>% mutate(no_female2 = no_female-1),
+                RGfemale|trials(no_female2) ~  cen_ntm*TY + cen_ntm*IT + no_est  + no_kin + (1|subject) + (1|no_focal),
+                family = beta_binomial,
+                backend = "cmdstanr")
+
+d <- dh_check_brms(m_RGsize19)
+
+check_collinearity(m_RGsize19)
+
+model_parameters(m_RGsize19)
+  
+estimate_slopes(m_RGsize19,
+                   trend = "cen_est",
+                at = "TYIT")
+
+estimate_slopes(m_RGsize19,
+                trend = "cen_ntm",
+                at = c("TY = c(0,1)"))
+
+## 2020
+focal_rest20 <- focal_rest %>% 
+  filter(study_period == "m20") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE),
+         cen_est = no_est - mean(no_est, na.rm = TRUE))
+
+
+m_RGsize20 <- brm(data = focal_rest20 %>% mutate(no_female2 = no_female-1),
+                RGfemale|trials(no_female2) ~  cen_ntm*TY + cen_ntm*IT + no_est  + no_kin + (1|subject) + (1|no_focal),
+                family = beta_binomial,
+                backend = "cmdstanr")
+
+d <- dh_check_brms(m_RGsize20)
+
+check_collinearity(m_RGsize20)
+
+model_parameters(m_RGsize20)
+
+estimate_slopes(m_RGsize20,
+                trend = "cen_ntm",
+                at = c("TY = c(0,1)"))
+
+
+## 2021
+focal_rest21 <- focal_rest %>% 
+  filter(study_period == "m21") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE),
+         cen_est = no_est - mean(no_est, na.rm = TRUE))
+
+
+m_RGsize21 <- brm(data = focal_rest21 %>% mutate(no_female2 = no_female-1),
+                RGfemale|trials(no_female2) ~  cen_ntm*TY + no_est  + no_kin + (1|subject) + (1|no_focal),
+                family = beta_binomial,
+                backend = "cmdstanr")
+
+d <- dh_check_brms(m_RGsize21)
+
+check_collinearity(m_RGsize21)
+
+model_parameters(m_RGsize21)
+  
 d <- dh_check_brms(r)
 
 testZeroInflation(d)
 
 check_collinearity(r)
 
-estimate_slopes(r,
+estimate_slopes(m_RGsize21,
                 trend = "cen_ntm",
-                at = c("TY2"))
+                at = c("TY = c(0,1)"))
 
 estimate_contrasts(r,
                    contrast = "TY2")
@@ -163,21 +279,46 @@ r2 <- brm(data = a %>% mutate(date = as.factor(date)) %>% filter(TY != "2" & IT 
            backend = "cmdstanr")
 ```
 
+```{r}
+focal_raw_prox_fin %>% 
+  filter(activity == "F" & T_G == "G") %>% 
+  mutate(rate_female = no_female/max_female) %>% 
+  filter(max_female >= 0.5) %>% 
+  filter(consort <= 2) %>% 
+  replace_na(list(hud = 0)) %>% 
+  filter(time %% 5 == 0) %>% 
+  filter(rs2 == "0") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE)) %>% 
+  mutate(N = 1:n())  %>% 
+  mutate(TY2 = ifelse(TY == "1" & TY_10m == "1", "a",
+                      ifelse(TY == "1" & TY_10m == "0", "b",
+                             ifelse(TY == "0", "c", "NA")))) -> focal_feed
+
+focal_feed %>% 
+  ggplot(aes(x = no_ntm, y = x3m_female/no_female-1))+
+  geom_count()+
+  facet_wrap(study_period~TY)+
+  geom_smooth(method = "glm")
+```
+
+
 ## 各個体追跡セッションを1つのサンプルとする  
 各個体追跡セッションにおける平均休息集団サイズと平均周辺個体数を算出する。ただし、少なくとも地上での休息が10分以上ある日のみを抽出する。    
 ```{r}
-focal_raw_prox %>%
+focal_raw_prox_fin %>%
   filter(study_period != "m18") %>% 
   filter(RG == "1") %>% 
   filter(RGsuc3 == "1") %>% 
   mutate(TY = as.factor(TY),
          IT = as.factor(IT)) %>% 
   ungroup() %>% 
-  group_by(no_focal, subject, date, consort, rs2, TY, IT, no_ntm, no_est, study_period, no_female) %>% 
+  group_by(no_focal, subject, date, consort, rs2, TY, IT, no_ntm, no_est, study_period, no_female, rate_agg, rate_ntm, rate_tm, no_kin, temp_am) %>% 
   summarise(N = n(),
-            sum = sum(RGfemale, na.rm = TRUE),
-            max = max(RGfemale),
-            sum_5m = sum(x5m_female)) %>%
+            sum = sum(RGfemale+1, na.rm = TRUE),
+            max = max(RGfemale+1),
+            sum_5m = sum(x5m_female, na.rm = TRUE),
+            sum_TY10m = sum(TY_10m),
+            sum_TY3m = sum(TY_3m)) %>%
   ungroup() %>% 
   filter(consort <= 2, N >= 15) %>% 
   replace_na(list(IT = "0")) %>% 
@@ -190,8 +331,8 @@ focal_raw_prox %>%
 ```{r}
 RGsize_sum %>% 
   filter(rs2 == "0") %>% 
-  ggplot(aes(x = no_ntm, y = sum_5m/N))+
-  geom_count(aes(color = TY, shape = as.factor(rs2)))+
+  ggplot(aes(x = no_ntm, y = max))+
+  geom_point(aes(color = TY, shape = as.factor(rs2)))+
   facet_grid(study_period~TY)+
   geom_smooth(aes(color = TY),
               method = "glm")
@@ -199,10 +340,10 @@ RGsize_sum %>%
 
 
 ```{r}
-r <-  brm(data = RGsize_sum %>% mutate(date = as.factor(date)),
-          sum ~ cen_est*TY + cen_est*IT + no_ntm + study_period + no_female + offset(logN) + (1|subject) + (1|no_focal) + (1|date) + (1|no_focal),
+r <-  brm(data = RGsize_sum %>% mutate(date = as.factor(date)) ,
+          sum ~ no_ntm*TY +  no_est + no_female + no_kin + study_period + rs2 + offset(logN) + (1|subject) + (1|no_focal),
           control=list(adapt_delta = 0.9999, max_treedepth = 22),
-           iter = 5000, warmup = 2500, seed = 13,
+          iter = 2000, warmup = 1000, seed = 13,
                      prior = c(prior(student_t(4,0,5), class = "b"),
                            prior(student_t(4,0,10), class = "Intercept"),
                            prior(student_t(4,0,10), class = "sd"),
@@ -231,3 +372,111 @@ model_parameters(r)
 hist(log(RGsize_sum$mean))
 ```
 
+# ネットワーク図の作成  
+## データの加工  
+```{r}
+focal_prox %>% 
+  filter(RG == "1") %>% 
+  filter((study_period == "m18" & ID %in% c(adult18,"TY","IT","LK","KR"))|(study_period == "m19" & ID %in% c(adult19,"TY","IT","LK","KR"))|(study_period == "m20" & ID %in% c(adult20,"TY","IT","KR"))|(study_period == "m21" & ID %in% c(adult21,"TY","KR","KM"))) %>% 
+  select(date, no_focal, time, subject, ID) %>% 
+  filter(time %% 5 == 0) %>% 
+  mutate(presence = 1) -> RGmember 
+  
+RGmember %>% 
+  tidyr::expand(nesting(date,no_focal,subject,time), ID) %>% 
+  left_join(RGmember, by = c("date","no_focal","subject","time","ID")) %>% 
+  mutate(presence = ifelse(subject == ID, 1,presence)) %>% 
+  replace_na(list(presence = 0)) %>% 
+  mutate(N = str_c(no_focal,"-",time)) %>% 
+  pivot_wider(names_from = ID, values_from = presence) %>% 
+  left_join(focal_raw_fin %>% select(no_focal,time, subject,rs2,TY,IT) %>% rename(TYpre = TY, ITpre = IT),
+            by = c("no_focal","subject","time")) %>% 
+  filter(rs2 == "0") -> RG_gbi
+```
+
+
+```{r}
+## 2018
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m18")) %>% 
+  select(-(1:5), -Coc,-Anz,-Har,-KM,-Ntm,-Trt,-rs2,-Mif,-TYpre,-ITpre) -> gbi_2018
+
+matRG_2018 <- get_network(gbi_2018,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2018)
+
+## 2019
+### TY不在 vs TY在  
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m19")) %>% 
+  filter(TYpre == "1" & ITpre == "1") %>% 
+  select(-(1:5), -Coc,-Anz,-Har,-KM,-Ntm,-Trt,-rs2,-TYpre, -ITpre, -IT) -> gbi_2019_TY
+
+matRG_2019TY <- get_network(gbi_2019_TY,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2019TY)
+
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m19")) %>% 
+  filter(TYpre == "0") %>% 
+  select(-(1:5), -Coc,-Anz,-Har,-KM,-Ntm,-Trt,-rs2,-TYpre, -ITpre, -IT, -TY) -> gbi_2019_notTY
+
+matRG_2019notTY <- get_network(gbi_2019_notTY,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2019notTY)
+
+## 2020
+### TY不在 vs TY在  
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m20")) %>% 
+  filter(TYpre == "1") %>% 
+  select(-(1:5), -Har,-KM,-rs2,-TYpre, -ITpre, -IT, -LK) -> gbi_2020_TY
+
+matRG_2020TY <- get_network(gbi_2020_TY,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2020TY)
+
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m20")) %>% 
+  filter(TYpre == "0") %>% 
+  select(-(1:5), -Har,-KM,-rs2,-TYpre, -ITpre, -IT, -TY, -LK) -> gbi_2020_notTY
+
+matRG_2020notTY <- get_network(gbi_2020_notTY,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2020notTY)
+
+## 2021年  
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m21")) %>% 
+  filter(TYpre == "1") %>% 
+  select(-(1:5), -rs2,-TYpre, -ITpre, -IT,-LK) -> gbi_2021_TY
+
+matRG_2021TY <- get_network(gbi_2021_TY,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2021TY)
+
+RG_gbi %>% 
+  filter(str_detect(no_focal,"m21")) %>% 
+  filter(TYpre == "0") %>% 
+  select(-(1:5), -rs2,-TYpre, -ITpre, -IT, -TY,-LK) -> gbi_2021_notTY
+
+matRG_2021notTY <- get_network(gbi_2021_notTY,
+                          data_format = "GBI",
+                          association_index = "HWI")
+
+met.eigen(matRG_2021notTY)
+```
+
+## 非交尾期との比較  

@@ -89,7 +89,8 @@ focal_sum_ntm %>%
   pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
   ggplot(aes(x = study_period, y = agg*60/dur))+
   geom_violin(aes(fill = type), bw = 0.25,
-              color = "black")+
+              color = "black",
+              scale = "width")+
   geom_boxplot(aes(color = type),
                fill = "grey85",
                outlier.alpha = 0,
@@ -270,7 +271,7 @@ focal_sum_ntm %>%
 #### 群れオスと群れ外オスの攻撃を区別しない    
 まず、群れオスと群れ外オスの攻撃を区別しないで分析を行う。  
 
-##### モデリング    
+##### モデリング1(全期間をまとめる)       
 モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。    
 
 - 分布: 負の二項分布  
@@ -391,11 +392,209 @@ estimate_cont_rs_est %>%
 p_cont_rs_ntm + p_cont_rs_est
 ```
 
-###### 結果の図示  
+##### モデリング2(2019年)         
+続いて、2019年のデータのみを用いて分析を行う。また、調査期間を説明変数から除き、*IT*の在/不在もモデルに含める。    
 
-##### 結果まとめ  
-- *TY*が群れにいる日はいない日に比べて、また(発情メス数が10頭以下くらいであれば)非発情メスは発情メスに比べて被攻撃頻度が有意に低かった。  
-- 発情メス・非発情メスいずれについても発情メス数が多い日ほど被攻撃頻度が高い傾向があった。  
+```{r}
+focal_sum %>% 
+  filter(study_period == "m19") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm),
+         cen_est = no_est - mean(no_est)) -> focal_sum19
+
+m_aggfocal19 <- brm(no_agg ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + IT  
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum19,
+                  file = "model/m_aggfocal19.rds")
+```
+
+###### モデルチェック  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal19 <- dh_check_brms(m_aggfocal19)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal19)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal19)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal19)
+```
+
+###### 結果の確認  
+有意な変数は一つもなかった。  
+```{r}
+model_parameters(m_aggfocal19)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と有意な関連はなかった。    
+```{r}
+estimate_slopes(m_aggfocal19,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+これは、群れ外オス数についても同様であった。  
+```{r}
+estimate_slopes(m_aggfocal19,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+##### モデリング3(2020年)         
+続いて、2020年のデータのみを用いて分析を行う。*IT*の在/不在もモデルに含める。    
+
+```{r}
+focal_sum %>% 
+  filter(study_period == "m20") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm),
+         cen_est = no_est - mean(no_est)) -> focal_sum20
+
+m_aggfocal20 <- brm(no_agg ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + IT  
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum20,
+                  file = "model/m_aggfocal20.rds")
+```
+
+###### モデルチェック  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal20 <- dh_check_brms(m_aggfocal20)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal20)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal20)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal20)
+```
+
+###### 結果の確認  
+*IT*の在/不在と発情の有無が有意な効果。
+```{r}
+model_parameters(m_aggfocal20)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と有意な関連はなかった。    
+```{r}
+estimate_slopes(m_aggfocal20,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+これは、群れ外オス数についても同様であった。  
+```{r}
+estimate_slopes(m_aggfocal20,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+##### モデリング4(2021年)         
+続いて、2019年のデータのみを用いて分析を行う。また、調査期間を説明変数から除き、*IT*の在/不在もモデルに含める。    
+
+```{r}
+focal_sum %>% 
+  filter(study_period == "m21") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm),
+         cen_est = no_est - mean(no_est)) -> focal_sum21
+
+m_aggfocal21 <- brm(no_agg ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY   
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum21,
+                  file = "model/m_aggfocal21.rds")
+```
+
+###### モデルチェック  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal21 <- dh_check_brms(m_aggfocal21)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal21)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal21)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal21)
+```
+
+###### 結果の確認  
+発情メス数と発情の有無のみが有意な影響。   
+```{r}
+model_parameters(m_aggfocal21)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メスのみで被攻撃頻度と有意な関連があった。    
+```{r}
+estimate_slopes(m_aggfocal21,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数はいずれも有意な影響なし。  
+```{r}
+estimate_slopes(m_aggfocal21,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
 
 
 #### 群れオス・群れ外オスを区別  
@@ -409,7 +608,7 @@ p_cont_rs_ntm + p_cont_rs_est
 - ランダム切片: 追跡個体ID  
 
 ##### 群れオスからの攻撃頻度  
-###### モデリング1    
+###### モデリング1(全期間含める)      
 まず、群れオスの攻撃についてモデリングする。  
 ```{r}
 m_aggfocal_tm <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_ntm:rs2 + TY + IT + study_period 
@@ -446,7 +645,7 @@ testZeroInflation(check_m_aggfocal_tm)
 check_collinearity(m_aggfocal_tm)
 ```
 
-###### モデリング2      
+###### モデリング2(全期間含める)       
 そこで、以下で群れ外オス数と発情メス数についてそれぞれ別のモデルを作成した。 
 ```{r}
 m_aggfocal_tm_est <- brm(agg_tm ~ cen_est  +  rs2 +  cen_est:rs2 + TY + study_period 
@@ -587,8 +786,261 @@ p_cont_rs_tm_ntm + p_cont_rs_tm_est
 - 群れオスからの攻撃については、発情メス数や群れ外オス数の有意な影響はなかった。  
 - 発情の有無のみが明確に影響を与えている要因だった。  
 
+###### モデリング3(2019年)        
+続いて、調査期間ごとにモデリングする。*IT*の在/不在をモデルに含める。    
+
+```{r}
+focal_sum_ntm %>% 
+  filter(study_period == "m19") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm),
+         cen_est = no_est - mean(no_est)) -> focal_sum_ntm19
+
+m_aggfocal_tm19 <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_ntm:rs2 + TY + IT  
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm19,
+                         file = "model/m_aggfocal_tm19.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm19 <- dh_check_brms(m_aggfocal_tm19)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm19)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm19)
+```
+
+VIFも10以下で問題ないよう。   
+```{r}
+check_collinearity(m_aggfocal_tm19)
+```
+
+**結果の確認**  
+
+有意な変数はなかった。  
+```{r}
+model_parameters(m_aggfocal_tm19)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数についてはいずれも有意な関連はなかった。    
+```{r}
+estimate_slopes(m_aggfocal_tm19,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数もいずれも有意な影響なし。  
+```{r}
+estimate_slopes(m_aggfocal_tm19,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング4(2020年)        
+*IT*の在/不在をモデルに含める。    
+
+```{r}
+focal_sum_ntm %>% 
+  filter(study_period == "m20") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm),
+         cen_est = no_est - mean(no_est)) -> focal_sum_ntm20
+
+m_aggfocal_tm20 <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_ntm:rs2 + TY + IT  
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm20,
+                         file = "model/m_aggfocal_tm20.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm20 <- dh_check_brms(m_aggfocal_tm20)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm20)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm20)
+```
+
+ただし、VIFが高くて多重共線性の問題があるよう。  
+```{r}
+check_collinearity(m_aggfocal_tm20)
+```
+
+###### モデリング5(2020年)  
+そこで、交互作用をなくしてモデリングする(交互作用を含めると片方だけの変数を用いても多重共線性の問題は解決されなかった)。    
+```{r}
+## 群れ外オス数  
+m_aggfocal_tm20_b <- brm(agg_tm ~ no_ntm  +  rs2 + no_est + TY + IT  
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm20,
+                         file = "model/m_aggfocal_tm20_b.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm20_b <- dh_check_brms(m_aggfocal_tm20_b)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm20_b)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm20_b)
+```
+
+VIFも問題ない。  
+```{r}
+check_collinearity(m_aggfocal_tm20_b)
+```
+
+
+**結果の確認**  
+発情メス数のみが有意な影響。  
+```{r}
+model_parameters(m_aggfocal_tm20_b)
+```
+
+###### モデリング6(2021年)        
+
+```{r}
+focal_sum_ntm %>% 
+  filter(study_period == "m21") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm),
+         cen_est = no_est - mean(no_est)) -> focal_sum_ntm21
+
+m_aggfocal_tm21 <- brm(agg_tm ~ cen_est + cen_ntm  +  rs2 +  cen_est:rs2 +  cen_ntm:rs2 + TY + IT  
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm21,
+                         file = "model/m_aggfocal_tm21.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm21 <- dh_check_brms(m_aggfocal_tm21)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm21)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm21)
+```
+
+VIFが10以上で多重共線性の問題があるよう。    
+```{r}
+check_collinearity(m_aggfocal_tm21)
+```
+
+###### モデリング7(2021年)        
+発情メス数と発情の有無を除いたモデルにする。 
+```{r}
+m_aggfocal_tm21_b <- brm(agg_tm ~ cen_ntm*rs2 + no_est + TY + IT  
+                         + offset(logdur) + (1|subject),
+                         family = negbinomial,
+                         iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                         control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                         backend = "cmdstanr",
+                         data = focal_sum_ntm21,
+                         file = "model/m_aggfocal_tm21_b.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm21_b <- dh_check_brms(m_aggfocal_tm21_b)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm21_b)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm21_b)
+```
+
+VIFも問題なかった。  
+```{r}
+check_collinearity(m_aggfocal_tm21_b)
+```
+
+**結果の確認**  
+有意な変数はなかった。  
+```{r}
+model_parameters(m_aggfocal_tm21_b)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+群れ外オス数はいずれも有意な影響なし。  
+```{r}
+estimate_slopes(m_aggfocal_tm21_b,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
 ##### 群れ外オスからの攻撃頻度  
-###### モデリング  
+###### モデリング1(全部含める)    
 続いて、群れ外オスからの攻撃についてモデリングする。  
 
 ```{r}
@@ -604,19 +1056,6 @@ m_aggfocal_ntm <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est
                      backend = "cmdstanr",
                      data = focal_sum_ntm,
                      file = "model/m_aggfocal_ntm.rds")
-
-m_aggfocal_ntm2 <- brm(agg_ntm ~ cen_ntm  + rs2 + cen_ntm:rs2 + TY + study_period 
-                  + offset(logdur) + (1|subject),
-                     family = negbinomial,
-                     iter = 5000, warmup = 2500, seed = 13,
-                     prior = c(prior(student_t(4,0,5), class = "b"),
-                           prior(student_t(4,0,10), class = "Intercept"),
-                           prior(student_t(4,0,10), class = "sd"),
-                           prior(gamma(0.01,0.01), class = "shape")),
-                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
-                     backend = "cmdstanr",
-                     data = focal_sum_ntm,
-                     file = "model/m_aggfocal_ntm2.rds")
 ```
 
 **モデルチェック**  
@@ -727,6 +1166,195 @@ p_cont_rs_ntm_ntm + p_cont_rs_ntm_est
 - 発情の有無による被攻撃頻度の違いはそこまで顕著ではなかった。   
 - *TY*の有無による被攻撃頻度の違いは有意な傾向。  
 
+###### モデリング2(2019年)      
+調査期間ごとにモデリングする。  
+
+```{r}
+m_aggfocal_ntm19 <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est:rs2 + TY + IT
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm19,
+                     file = "model/m_aggfocal_ntm19.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_ntm19 <- dh_check_brms(m_aggfocal_ntm19)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_ntm19)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_ntm19)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal_ntm19)
+```
+
+**結果の確認**  
+有意な変数はなし。  
+```{r}
+model_parameters(m_aggfocal_ntm19)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と関連がなかった。  
+```{r}
+estimate_slopes(m_aggfocal_ntm19,
+                trend = "cen_est",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についても、発情メス・非発情メスのいずれについても有意な効果はなかった。  
+```{r}
+estimate_slopes(m_aggfocal_ntm19,
+                trend = "cen_ntm",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング3(2020年)      
+続いて、群れ外オスからの攻撃についてモデリングする。  
+
+```{r}
+m_aggfocal_ntm20 <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est:rs2 + TY + IT + 
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm20,
+                     file = "model/m_aggfocal_ntm20.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_ntm20 <- dh_check_brms(m_aggfocal_ntm20)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_ntm20)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_ntm20)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal_ntm20)
+```
+
+**結果の確認**  
+有意な変数はなし。  
+```{r}
+model_parameters(m_aggfocal_ntm20)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と関連がなかった。  
+```{r}
+estimate_slopes(m_aggfocal_ntm20,
+                trend = "cen_est",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についても、発情メス・非発情メスのいずれについても有意な効果はなかった。  
+```{r}
+estimate_slopes(m_aggfocal_ntm20,
+                trend = "cen_ntm",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング3(2021年)      
+続いて、群れ外オスからの攻撃についてモデリングする。  
+
+```{r}
+m_aggfocal_ntm21 <- brm(agg_ntm ~ cen_ntm + cen_est + rs2 + cen_ntm:rs2  + cen_est:rs2 + TY +  
+                  + offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 21),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm21,
+                     file = "model/m_aggfocal_ntm21.rds")
+```
+
+**モデルチェック**  
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_ntm21 <- dh_check_brms(m_aggfocal_ntm21)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_ntm21)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_ntm21)
+```
+
+VIFは全て10以下であり、そこまで多重共線性の問題はないよう。  
+```{r}
+check_collinearity(m_aggfocal_ntm21)
+```
+
+**結果の確認**  
+発情メス数の有意な影響あり。  
+```{r}
+model_parameters(m_aggfocal_ntm21)
+```
+<br/>  
+
+交互作用項のある変数の検討を行う。  
+
+まず、発情メス数については発情メス・非発情メスのいずれについても被攻撃頻度と有意な関連があった。    
+```{r}
+estimate_slopes(m_aggfocal_ntm21,
+                trend = "cen_est",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についても、発情メス・非発情メスのいずれについても有意な効果はなかった。  
+```{r}
+estimate_slopes(m_aggfocal_ntm21,
+                trend = "cen_ntm",
+                at = "rs2 = c(0,1)")
+```
+<br/>  
+
 ## 全生起サンプリングを用いた分析  
 続いて、全生起サンプリングのデータを用いて同様の分析を行う。  
 
@@ -819,7 +1447,8 @@ agg_ao_all_fin %>%
   pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
   ggplot(aes(x = study_period, y = agg*60/duration))+
   geom_violin(aes(fill = type), bw = 0.07,
-              color = "black")+
+              color = "black",
+              scale = "width")+
   geom_boxplot(aes(color = type),
                fill = "grey85",
                outlier.alpha = 0,
@@ -1132,7 +1761,6 @@ check_collinearity(m_aggao_tm)
 **結果の確認**  
 発情メス数と群れ外オス数、*TY*の有無、発情の有無、調査期間が有意な影響。*TY*の有無については、*TY*がいる日は被攻撃頻度が有意に低下する。
 ```{r}
-### 発情メス数
 model_parameters(m_aggao_tm)
 ```
 <br/>  
@@ -1205,9 +1833,189 @@ estimate_cont_ao_rs_tm_est %>%
 p_cont_rs_tm_ntm + p_cont_rs_tm_est
 ```
 
+###### モデリング2(2019年)      
+```{r}
+m_aggao_tm19 <- brm(agg_tm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + IT
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(study_period == "m19"),
+                  file = "model/m_aggao_tm19.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_tm19 <- dh_check_brms(m_aggao_tm19)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_tm19)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_tm19)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_tm19)
+```
+
+**結果の確認**  
+群れ外オス数、発情の有無、*IT*の有無が有意な影響。
+```{r}
+model_parameters(m_aggao_tm19)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メス・発情メスいずれも観察日の発情メス数が被攻撃頻度に有意に影響していなかった。  
+```{r}
+estimate_slopes(m_aggao_tm19,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数については、いずれも被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_tm19,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング3(2020年)      
+```{r}
+m_aggao_tm20 <- brm(agg_tm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + IT
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(study_period == "m20"),
+                  file = "model/m_aggao_tm20.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_tm20 <- dh_check_brms(m_aggao_tm20)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_tm20)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_tm20)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_tm20)
+```
+
+**結果の確認**  
+*IT*の有無、発情の有無のみが有意な影響。  
+```{r}
+model_parameters(m_aggao_tm20)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メス・発情メスいずれも観察日の発情メス数が被攻撃頻度に有意に影響していなかった。  
+```{r}
+estimate_slopes(m_aggao_tm20,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についても同様だった。   
+```{r}
+estimate_slopes(m_aggao_tm20,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング4(2021年)      
+```{r}
+m_aggao_tm21 <- brm(agg_tm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY 
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(study_period == "m21"),
+                  file = "model/m_aggao_tm21.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_tm21 <- dh_check_brms(m_aggao_tm21)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_tm21)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_tm21)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_tm21)
+```
+
+**結果の確認**  
+発情メス数と*TY*の有無、発情の有無、発情メス数と発情の有無の交互作用が有意。  
+```{r}
+model_parameters(m_aggao_tm21)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メスのみが観察日の発情メス数が被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_tm21,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数についてはいずれも有意ではなかった。  
+```{r}
+estimate_slopes(m_aggao_tm21,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
 
 ##### 群れ外オスからの攻撃頻度  
-###### モデリング  
+###### モデリング1(全期間)    
 ```{r}
 m_aggao_ntm <- brm(agg_ntm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + study_period 
                   + offset(logdur) + (1|femaleID) + (1|date),
@@ -1318,3 +2126,185 @@ estimate_cont_ao_rs_ntm_est %>%
 
 p_cont_ao_rs_ntm_ntm + p_cont_ao_rs_ntm_est
 ```
+
+###### モデリング2(2019年)      
+```{r}
+m_aggao_ntm19 <- brm(agg_ntm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + IT
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(study_period == "m19"),
+                  file = "model/m_aggao_ntm19.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_ntm19 <- dh_check_brms(m_aggao_ntm19)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_ntm19)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_ntm19)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_ntm19)
+```
+
+**結果の確認**  
+群れ外オス数、*TY*の有無、*IT*の有無が有意な影響。
+```{r}
+### 発情メス数
+model_parameters(m_aggao_ntm19)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メス・発情メスいずれも観察日の発情メス数が被攻撃頻度に有意に影響していなかった。  
+```{r}
+estimate_slopes(m_aggao_ntm19,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数については、非発情メスのみで被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_ntm19,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング3(2020年)      
+```{r}
+m_aggao_ntm20 <- brm(agg_ntm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY + IT
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(study_period == "m20"),
+                  file = "model/m_aggao_ntm20.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_ntm20 <- dh_check_brms(m_aggao_ntm20)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_ntm20)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_ntm20)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_ntm20)
+```
+
+**結果の確認**  
+群れ外オス数、*IT*の有無、発情の有無、調査期間が有意な影響。  
+```{r}
+model_parameters(m_aggao_ntm20)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メス・発情メスいずれも観察日の発情メス数が被攻撃頻度に有意に影響していなかった。  
+```{r}
+estimate_slopes(m_aggao_ntm20,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数については、非発情メスのみ被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_ntm20,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+###### モデリング4(2021年)      
+```{r}
+m_aggao_ntm21 <- brm(agg_ntm ~ cen_ntm  + cen_est + rs2 + cen_ntm:rs2 + cen_est:rs2 + TY 
+                  + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(study_period == "m21"),
+                  file = "model/m_aggao_ntm21.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_m_aggao_ntm21 <- dh_check_brms(m_aggao_ntm21)
+```
+
+分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r}
+plotQQunif(check_m_aggao_ntm21)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_ntm21)
+```
+
+VIFも10以下には収まっている。    
+```{r}
+check_collinearity(m_aggao_ntm21)
+```
+
+**結果の確認**  
+発情メス数と群れ外オス数、*TY*の有無、発情の有無、調査期間が有意な影響。
+```{r}
+### 発情メス数
+model_parameters(m_aggao_ntm21)
+```
+<br/>  
+
+
+交互作用項のある変数の検討を行う。非発情メス・発情メスいずれも観察日の発情メス数が被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_ntm21,
+               trend = "cen_est",
+               at = "rs2 = c(0,1)")
+```
+<br/>  
+
+群れ外オス数については、非発情メスのみで被攻撃頻度に有意に影響していた。  
+```{r}
+estimate_slopes(m_aggao_ntm21,
+               trend = "cen_ntm",
+               at = "rs2 = c(0,1)")  
+```
+<br/>  

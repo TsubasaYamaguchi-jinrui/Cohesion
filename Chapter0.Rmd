@@ -17,6 +17,14 @@ library(easystats)
 library(ggeffects)
 library(ggdist)
 
+## ネットワーク関連  
+library(asnipe)
+library(sna)
+library(ANTs)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+
 ## ベイズモデルの設定
 rstan_options(auto_write = TRUE) 
 options(mc.cores = parallel::detectCores()) 
