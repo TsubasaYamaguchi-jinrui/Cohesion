@@ -82,6 +82,87 @@ datatable(focal_sum,
 
 ### データの確認  
 #### 調査年ごとの被攻撃頻度  
+##### モデリングによる比較  
+発情メスと非発情メスを分けて分析する。  
+
+###### 発情メス  
+**モデリング**  
+```{r}
+## 発情メス
+m_aggfocal_comp_est <- brm(no_agg ~ study_period + offset(logdur) + (1|subject),
+                           family = negbinomial,
+                           iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                                     prior(student_t(4,0,10), class = "Intercept"),
+                                     prior(student_t(4,0,10), class = "sd"),
+                                     prior(gamma(0.01,0.01), class = "shape")),
+                           control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                           backend = "cmdstanr",
+                           data = focal_sum %>% filter(dur >= 60 & rs2 == "1"),
+                           file = "model/m_aggfocal_comp_est.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_aggfocal_comp_est <- dh_check_brms(m_aggfocal_comp_est)
+```
+
+過分散などの問題はないよう。  
+```{r}
+plotQQunif(check_aggfocal_comp_est)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_aggfocal_comp_est)
+```
+
+**結果の確認**  
+2018年と2019年は2020年より有意に被攻撃頻度が高い。  
+```{r}
+estimate_contrasts(m_aggfocal_comp_est,
+                   contrast = "study_period")
+```
+
+###### 非発情メス  
+```{r}
+m_aggfocal_comp_anest <- brm(no_agg ~ study_period + offset(logdur) + (1|subject),
+                           family = negbinomial,
+                           iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                                     prior(student_t(4,0,10), class = "Intercept"),
+                                     prior(student_t(4,0,10), class = "sd"),
+                                     prior(gamma(0.01,0.01), class = "shape")),
+                           control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                           backend = "cmdstanr",
+                           data = focal_sum %>% filter(dur >= 60 & rs2 == "0"),
+                           file = "model/m_aggfocal_comp_anest.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_aggfocal_comp_anest <- dh_check_brms(m_aggfocal_comp_anest)
+```
+
+過分散などの問題はない。  
+```{r}
+plotQQunif(check_aggfocal_comp_anest)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_aggfocal_comp_anest)
+```
+
+**結果の確認**  
+2018年と2019年は2020年、2021年より有意に被攻撃頻度が高い。  
+```{r}
+estimate_contrasts(m_aggfocal_comp_anest,
+                   contrast = "study_period")
+```
+
+##### 図示  
+
 調査期間ごとに、発情メス・非発情メスが群れオス・群れ外オスから攻撃された頻度を図示する。  
 ```{r}
 focal_sum_ntm %>% 
@@ -130,6 +211,48 @@ focal_sum_ntm %>%
 以下の通り。  
 ```{r fig-aggfocal-studyperiod, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
 knitr::include_graphics("figure/p_focalagg_studyperiod.png")
+```
+<br/>  
+
+群れオス・群れ外オスを分けない。  
+```{r}
+focal_sum_ntm %>% 
+  filter(dur >= 60) %>% 
+  ggplot(aes(x = study_period, y = no_agg*60/dur))+
+  geom_violin(bw = 0.3,
+              color = "black",
+              scale = "width")+
+  geom_boxplot(fill = "grey85",
+               outlier.alpha = 0,
+               width = 0.2,
+               size = 0.2)+
+  stat_summary(fun = "mean",
+               shape = 18,
+               size = 0.5)+
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
+       fill = "", color = "")+
+  facet_rep_wrap(~rs2, repeat.tick.labels = TRUE,
+                 ncol = 2,
+                 labeller = as_labeller(c("0" = "非発情メス","1" = "発情メス")))+
+  theme_bw(base_size = 15)+
+  scale_x_discrete(labels = c("2018年","2019年","2020年","2021年"))+
+  theme(aspect.ratio = 0.7,
+        strip.background = element_blank(),
+        strip.text = element_text(family = "Yu Mincho",
+                                  hjust = 0),
+        axis.text.x =  element_text(family = "Yu Mincho"),
+        axis.title.y = element_text(family = "Yu Mincho",
+                                    angle = 0,
+                                    vjust = 0.5),
+        legend.text = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman")) -> p_focalagg_studyperiod_2
+
+# ggsave("figure/p_focalagg_studyperiod_2.png", p_focalagg_studyperiod_2, width = 200, height = 110, units = "mm", dpi = 600)
+```
+
+以下の通り。  
+```{r fig-aggfocal-studyperiod-2, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_focalagg_studyperiod_2.png")
 ```
 <br/>  
 
@@ -241,7 +364,7 @@ focal_sum_ID %>%
 ```
 
 以下の通り。  
-```{r fig-aggfocal-maleID, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+```{r fig-aggfocal-maleID, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの各オスからの被攻撃頻度"}
 knitr::include_graphics("figure/p_focalagg_maleID.png")
 ```
 
@@ -272,7 +395,7 @@ focal_sum_ntm %>%
 まず、群れオスと群れ外オスの攻撃を区別しないで分析を行う。  
 
 ##### モデリング1(全期間をまとめる)       
-モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。    
+モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。60分以上追跡したデータのみを使用。      
 
 - 分布: 負の二項分布  
 - 応答変数: 被攻撃回数(`no_agg`)    
@@ -1428,7 +1551,6 @@ agg_ao_all_d %>%
   mutate(logdur = log(duration/60)) %>% 
   ungroup() %>% 
   mutate() %>% 
-  filter(study_period != "m18") %>% 
   mutate(cen_est = no_est - mean(no_est),
          cen_ntm = no_ntm - mean(no_ntm))-> agg_ao_all_fin
 ```
@@ -1442,6 +1564,85 @@ datatable(agg_ao_all_fin,
 
 ### データの確認  
 #### 調査年ごとの被攻撃頻度  
+##### モデリングによる比較  
+発情メスと非発情メスを分けて分析する。  
+
+###### 発情メス  
+**モデリング**  
+```{r}
+m_aggao_comp_est <- brm(no_agg ~ study_period + offset(logdur) + (1|femaleID),
+                           family = negbinomial,
+                           iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                                     prior(student_t(4,0,10), class = "Intercept"),
+                                     prior(student_t(4,0,10), class = "sd"),
+                                     prior(gamma(0.01,0.01), class = "shape")),
+                           control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                           backend = "cmdstanr",
+                           data =  agg_ao_all_fin %>% filter(rs2 == "1"),
+                           file = "model/m_aggao_comp_est.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_aggao_comp_est <- dh_check_brms(m_aggao_comp_est)
+```
+
+過分散などの問題はないよう。  
+```{r}
+plotQQunif(check_aggao_comp_est)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_aggao_comp_est)
+```
+
+**結果の確認**  
+2018年と2019年は2020年、2021年より有意に被攻撃頻度が高い。また、2019年は2018年よりも被攻撃頻度が高い。    
+```{r}
+estimate_contrasts(m_aggao_comp_est,
+                   contrast = "study_period")
+```
+
+###### 非発情メス  
+```{r}
+m_aggao_comp_anest <- brm(no_agg ~ study_period + offset(logdur) + (1|femaleID),
+                           family = negbinomial,
+                           iter = 5000, warmup = 2500, seed = 13,
+                           prior = c(prior(student_t(4,0,5), class = "b"),
+                                     prior(student_t(4,0,10), class = "Intercept"),
+                                     prior(student_t(4,0,10), class = "sd"),
+                                     prior(gamma(0.01,0.01), class = "shape")),
+                           control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                           backend = "cmdstanr",
+                           data =  agg_ao_all_fin %>% filter(rs2 == "0"),
+                           file = "model/m_aggao_comp_anest.rds")
+```
+
+**モデルチェック**  
+```{r, include = FALSE}
+check_aggao_comp_anest <- dh_check_brms(m_aggao_comp_anest)
+```
+
+過分散などの問題はない。  
+```{r}
+plotQQunif(check_aggao_comp_anest)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_aggao_comp_anest)
+```
+
+**結果の確認**  
+2019年 > 2018年 > 2021年 > 2020年。、  
+```{r}
+estimate_contrasts(m_aggao_comp_anest,
+                   contrast = "study_period")
+```
+
+##### 図示  
 ```{r}
 agg_ao_all_fin %>% 
   pivot_longer(agg_tm:agg_ntm, names_to = "type", values_to= "agg") %>% 
@@ -1484,6 +1685,54 @@ agg_ao_all_fin %>%
         axis.text.y = element_text(family = "Times New Roman")) -> p_aggao_studyperiod
 
 # ggsave("figure/p_aggao_studyperiod.png", p_aggao_studyperiod, width = 270, height = 110, units = "mm", dpi = 600)
+```
+
+以下の通り。  
+```{r fig-aggao-study-period, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_aggao_study_period.png")
+```
+
+群れオス・群れ外オスを分けない。  
+```{r}
+agg_ao_all_fin %>% 
+  ggplot(aes(x = study_period, y = no_agg*60/duration))+
+  geom_violin(bw = 0.07,
+              color = "black",
+              scale = "width")+
+  geom_boxplot(fill = "grey85",
+               outlier.alpha = 0,
+               width = 0.2,
+               size = 0.2,
+               position = position_dodge(0.9))+
+  stat_summary(fun = "mean",
+               position = position_dodge(0.9),
+               shape = 18,
+               size = 0.5)+
+  labs(x = "", y = "被\n攻\n撃\n頻\n度\n(回/h)",
+       fill = "", color = "")+
+  facet_rep_wrap(~rs2, repeat.tick.labels = TRUE,
+                 ncol = 2,
+                 labeller = as_labeller(c("0" = "非発情メス","1" = "発情メス")))+
+  theme_bw(base_size = 15)+
+  scale_x_discrete(labels = c("2018年","2019年","2020年","2021年"))+
+  theme(aspect.ratio = 0.7,
+        strip.background = element_blank(),
+        strip.text = element_text(family = "Yu Mincho",
+                                  hjust = 0),
+        axis.text.x =  element_text(family = "Yu Mincho"),
+        axis.title.y = element_text(family = "Yu Mincho",
+                                    angle = 0,
+                                    vjust = 0.5),
+        legend.text = element_text(family = "Yu Mincho"),
+        plot.title = element_text(family = "Yu Mincho"),
+        axis.text.y = element_text(family = "Times New Roman")) -> p_aggao_studyperiod_2
+
+# ggsave("figure/p_aggao_studyperiod_2.png", p_aggao_studyperiod_2, width = 200, height = 110, units = "mm", dpi = 600)
+```
+
+以下の通り。  
+```{r fig-aggao-study-period-2, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+knitr::include_graphics("figure/p_aggao_study_period_2.png")
 ```
 
 #### オスごとの攻撃頻度  
@@ -1572,7 +1821,7 @@ aggao_dyad %>%
 ```
 
 以下の通り。  
-```{r fig-aggao-maleID, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの被攻撃頻度"}
+```{r fig-aggao-maleID, echo=FALSE, out.width="100%", fig.cap="調査期間ごとの各オスからの被攻撃頻度"}
 knitr::include_graphics("figure/p_aggao_maleID.png")
 ```
 

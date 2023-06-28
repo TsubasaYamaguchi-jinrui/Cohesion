@@ -5,6 +5,8 @@
 発情メス数と群れ外オス数については、300分以上追跡した日のデータのみを使用した。  
 ```{r }  
 base_all %>%
+  filter(date >= "2018-10-08") %>% 
+  filter(!(date %in% as_date(c("2019-11-21","2019-11-22","2019-11-23")))) %>% 
   mutate(season = ifelse(month(date) >= 9 & month(date) <= 12,"m","nm")) %>% 
   mutate(study_period = str_c(season,str_sub(year(date),3,4))) %>% 
   left_join(male_all %>% 

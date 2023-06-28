@@ -552,7 +552,35 @@ plotQQunif(check_agginj2)
 いずれのモデルでも、群れオス・群れ外オスの攻撃いずれもが怪我と有意に関連。  
 
 ```{r}
-model_parameters(m_agginj)
+model_parameters(m_agginj) %>% 
+  data.frame() %>% 
+  select(c(1,2,4,5)) %>%   
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","rate_agg_tm" = "群れオスからの攻撃頻度",
+                                                  "rate_agg_ntm" = "群れ外オスからの攻撃頻度",
+                                                  "rs2" = "発情有(vs 無)",
+                                                  "study_periodm19" = "2019年(vs 2018年)",
+                                              　　"study_periodm20" = "2020年(vs 2018年)",
+                                              　　"study_periodm21" = "2021年(vs 2018年)",
+                                              　　":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_agginj
+
+table_agginj
+
+# save_as_image(table_agginj, "table/table_agginj.png")
 ```
 <br/>  
 
@@ -727,7 +755,35 @@ plotQQunif(check_agginj_all2)
 **1つ目のモデル**  
 モデルの結果は以下の通り。`Rhat`はすべて1.01以下であり、収束の問題はないと思われる。有向サンプルサイズにも大きな問題はない。    
 ```{r}
-model_parameters(m_agginj_all)
+model_parameters(m_agginj_all) %>% 
+  data.frame() %>% 
+  select(c(1,2,4,5)) %>%   
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","rate_agg" = "オスからの攻撃頻度",
+                                                  "rate_agg:rs2" = "オスからの攻撃頻度×発情の有無",
+                                                  "rs2" = "発情有(vs 無)",
+                                                  "study_periodm19" = "2019年(vs 2018年)",
+                                              　　"study_periodm20" = "2020年(vs 2018年)",
+                                              　　"study_periodm21" = "2021年(vs 2018年)",
+                                              　　":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.7) %>% 
+  width(j = 2, width = 1.5)-> table_agginj_all
+
+table_agginj_all
+
+# save_as_image(table_agginj_all, "table/table_agginj_all.png")
 ```
 <br/>  
 

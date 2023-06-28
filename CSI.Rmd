@@ -1,0 +1,223 @@
+# CSIの算出  
+以下では、2018年時点で6歳以上だったメスと*TY*との親密度を表す指標として、CSIを算出する。  
+2018年交尾期と2019年非交尾期、2019年交尾期の個体追跡データのみを使用。  
+
+```{r, message = FALSE}
+## 交尾期データ
+focal_raw_fin %>% 
+  filter(rs2 == "0") %>% 
+  filter(study_period %in% c("m18","m19")) -> focal_raw_mating
+
+## 非交尾期データ  
+focal_raw_nm19 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019nonmating/2019nonmating_raw.xlsx",
+                      sheet = "focal_raw",
+                      col_types = c(rep("numeric",2),rep("date",1),rep("text",1),rep("numeric",2), rep("text",2),
+                                    rep("numeric",2),rep("text",21),"numeric","text", rep("numeric",3))) %>% 
+                            
+  mutate(study_period = "nm19")
+
+## 結合する  
+bind_rows(focal_raw_mating, focal_raw_nm19) %>% 
+  
+
+
+focal2_b <- focal_b %>% 
+  mutate(groom = 
+           ifelse(Groomer == subject,Groomee,Groomer), 
+         groom2=
+           ifelse(Groomer == subject,Groomee2,Groomer2))%>%
+  mutate(subject = as.factor(subject),
+         groom = as.factor(groom),
+         groom2 = as.factor(groom2)) %>% 
+　filter(rs == "0", alpha == "1") 
+  
+## 追跡個体名を変える  
+focal2_b %>% 
+  mutate(subject = str_replace_all(focal2_b$subject,
+    c("Tai"="TY","Its" = "IT" ,"Raki" = "LK",
+      "Kiru" = "KR",
+      "^Ma$" = "Mal", "Kira" = "Kil", "Kuri" = "Kur",
+      "Koro" = "Kor", "^Nat$" = "Ntr", "^To$" = "Tot",
+      "Hen" = "Hen", "Ho" = "Hot", "^Mi$" = "Mik",
+      "^Me$"= "Mei"))) %>% 
+  filter(subject %in% adult)-> focal2_b
+
+## 追跡時間の算出  
+ad <- tibble(subject = adult)
+
+focal2_b %>% 
+  group_by(subject, no_focal) %>% 
+  summarise(dur = n()) %>% 
+  ungroup() %>% 
+  group_by(subject) %>% 
+  summarise(duration = sum(dur)) %>% 
+  right_join(ad, by = "subject") %>% 
+  replace_na(list(duration=0)) %>% 
+  arrange(subject) -> focal_duration_b
+```
+
+```{r, include = FALSE}
+focal2_c2 <- focal_b %>% 
+  mutate(groom = 
+           ifelse(Groomer == subject,Groomee,Groomer), 
+         groom2=
+           ifelse(Groomer == subject,Groomee2,Groomer2))%>%
+  mutate(subject = as.factor(subject),
+         groom = as.factor(groom),
+         groom2 = as.factor(groom2)) %>% 
+　filter(rs == "0") 
+  
+## 追跡個体名を変える  
+focal2_c2 %>% 
+  mutate(subject = str_replace_all(focal2_c2$subject,
+    c("Tai"="TY","Its" = "IT" ,"Raki" = "LK",
+      "Kiru" = "KR",
+      "^Ma$" = "Mal", "Kira" = "Kil", "Kuri" = "Kur",
+      "Koro" = "Kor", "^Nat$" = "Ntr", "^To$" = "Tot",
+      "Hen" = "Hen", "Ho" = "Hot", "^Mi$" = "Mik",
+      "^Me$"= "Mei"))) %>% 
+  filter(subject %in% adult)-> focal2_c2
+
+## 追跡時間の算出  
+ad <- tibble(subject = adult)
+
+focal2_c2 %>% 
+  group_by(subject, no_focal) %>% 
+  summarise(dur = n()) %>% 
+  ungroup() %>% 
+  group_by(subject) %>% 
+  summarise(duration = sum(dur)) %>% 
+  right_join(ad, by = "subject") %>% 
+  replace_na(list(duration=0)) %>% 
+  arrange(subject) %>% 
+  filter(subject != "KR")-> focal_duration_c2
+```
+
+```{r}
+focal_duration_c2 %>% 
+  filter(duration>0) %>% 
+  summarise(mean = mean(duration/60),
+            sd = sd(duration/60))
+```
+
+
+```{r, include = FALSE}
+## 毛づくろい相手のIDを変える  
+focal2_c2 %>% 
+　filter(activity == "G") %>% 
+  pivot_longer(cols = c("groom","groom2"), 
+               names_to = "groom", values_to = "ID") %>% 
+  mutate(ID = as.factor(ID)) -> focal3_c2
+
+focal3_c2 %>% 
+    mutate(ID = str_replace_all(focal3_c2$ID,
+    c("Tai"="TY","Its" = "IT" ,"Raki" = "LK",
+      "Kiru" = "KR",
+      "^Ma$" = "Mal", "Kira" = "Kil", 
+      "Koro" = "Kor", "^Nat$" = "Ntr", "^To$" = "Tot",
+      "Ho" = "Hot", "^Mi$" = "Mik",
+      "^Me$"= "Mei"))) %>% 
+  mutate(adult = ifelse(ID %in% adult, 1,0)) %>% 
+  filter(adult == "1") -> focal_groom_c2
+
+
+## 毛づくろいマトリックスの算出
+groom_mat_f2 <- df.to.mat(focal_groom_c2, actor = "subject", 
+                       receiver = "ID", sym = T,
+                       tobs = focal_duration_c2$duration)
+
+groom_mat_f2[is.na(groom_mat_f2)] <- 0L
+
+groom_mat_f2 <- groom_mat_f2[sort(rownames(groom_mat_f2)),
+                       sort(colnames(groom_mat_f2))]
+```
+
+```{r, include = FALSE}
+focal2_c2 %>% 
+  filter(activity != "M", activity != "O",
+         TG == "G") %>% 
+  select(no_focal, groom, groom2,
+         subject, x0_1m:x1_3m7) -> focal4_c2
+
+## 毛づくろい相手のIDを変える  
+focal4_c2 %>% 
+  mutate(groom = str_replace_all(focal4_c2$groom,
+    c("Tai"="TY","Its" = "IT" ,"Raki" = "LK",
+      "Kiru" = "KR",
+      "^Ma$" = "Mal", "Kira" = "Kil", "Kuri" = "Kur",
+      "Koro" = "Kor", "^Nat$" = "Ntr", "^To$" = "Tot",
+      "Hen" = "Hen", "Ho" = "Hot", "^Mi$" = "Mik",
+      "^Me$"= "Mei"))) %>% 
+  mutate(groom2 = str_replace_all(focal4_c2$groom2,
+    c("Tai"="TY","Its" = "IT" ,"Raki" = "LK",
+      "Kiru" = "KR",
+      "^Ma$" = "Mal", "Kira" = "Kil", "Kuri" = "Kur",
+      "Koro" = "Kor", "^Nat$" = "Ntr", "^To$" = "Tot",
+      "Hen" = "Hen", "Ho" = "Hot", "^Mi$" = "Mik",
+      "^Me$"= "Mei"))) -> focal4_c2
+
+## 分母の算出  
+focal4_c2 %>% 
+  group_by(subject, no_focal) %>% 
+  summarise(dur = n()) %>% 
+  ungroup() %>% 
+  group_by(subject) %>% 
+  summarise(duration = sum(dur)) %>% 
+  right_join(ad, by = "subject") %>% 
+  replace_na(list(duration=0)) %>% 
+  arrange(subject) -> prox_duration_c2
+
+## 近接相手を表す列を加える
+focal4_c2 %>% 
+  pivot_longer(cols = x0_1m:x1_3m7,
+               names_to = "distance", values_to = "ID")%>%
+  drop_na(ID) %>% 
+  mutate(ID = as.factor(ID)) %>% 
+  mutate(ID = str_replace(ID, "\\(M\\)",""))%>%
+  mutate(ID = str_replace(ID, "\\(F\\)","")) %>% 
+   mutate(ID = str_replace(ID, "\\(O\\)","")) %>% 
+  mutate(ID = str_replace(ID, "^Ra$","Raki")) %>% 
+  mutate(ID = str_replace(ID, "Muri","Kuri")) -> focal5_c2
+  
+focal5_c2 %>% 
+  mutate(ID = str_replace_all(focal5_c2$ID,
+    c("Tai"="TY","Its" = "IT" ,"Raki" = "LK",
+      "Kiru" = "KR",
+      "^Ma$" = "Mal", "Kira" = "Kil", "Kuri" = "Kur",
+      "Koro" = "Kor", "^Nat$" = "Ntr", "^To$" = "Tot",
+      "Hen" = "Hen", "Ho" = "Hot", "^Mi$" = "Mik",
+      "^Me$"= "Mei")))  %>% 
+  mutate(adult = ifelse(ID %in% adult, 1,0)) %>% 
+  filter(adult == "1")  %>% 
+  mutate(omit = ifelse(ID == groom|ID==groom2,1,0)) %>% 
+  replace_na(list(omit = 0)) %>% 
+  filter(omit !=1) -> focal_prox_c2
+
+## 近接マトリックスの算出  
+prox_mat_f2 <- df.to.mat(focal_prox_c2, actor = "subject", 
+                       receiver = "ID", sym = T,
+                       tobs = prox_duration_c2$duration)
+
+prox_mat_f2[is.na(prox_mat_f2)] <- 0L
+
+prox_mat_f2 <- prox_mat_f2[sort(rownames(prox_mat_f2)),
+                       sort(colnames(prox_mat_f2))]
+```
+
+```{r}
+female <- c("Kil","Kit","Koh","Kun","Kor","Ntr",
+           "Ten","Aka","Ako","Tam","Tot","Hot", "Hen",
+           "Mal","Mik","Mei")
+
+
+groom_f2 <- groom_mat_f2[female,female]
+diag(groom_f2) <- NA
+
+prox_f2 <- prox_mat_f2[female,female]
+diag(prox_f) <- NA
+
+mean_g2 <- mean(groom_f2,na.rm = T)
+mean_p2 <- mean(prox_f2,na.rm = T)
+
+CSI_f2 <- (groom_f2/mean_g2 + prox_f2/mean_p2)/2
+```
