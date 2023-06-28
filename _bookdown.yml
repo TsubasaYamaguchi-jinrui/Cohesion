@@ -6,6 +6,7 @@ rmd_files:
   - focal_cleaning.Rmd
   - cost_of_aggression.Rmd  
   - factor_of_aggression.Rmd  
+  - cohesion_analysis.Rmd
   - basic_data.Rmd  
   - RGsuc.Rmd  
   - sessioninfo.Rmd  

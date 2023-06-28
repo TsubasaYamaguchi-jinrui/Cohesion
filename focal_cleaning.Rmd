@@ -74,7 +74,7 @@ female_all %>%
   filter(age >= 6) %>% 
   group_by(date) %>% 
   summarise(no_female = sum(presence)) %>% 
-  ungroup() -> no_female
+  ungroup() -> num_female
 
 female_time %>% 
   pivot_longer(cols = Kur:Har,
@@ -86,7 +86,7 @@ female_time %>%
   ungroup() -> max_female
 
 focal_raw %>% 
-  left_join(no_female, by = "date") %>% 
+  left_join(num_female, by = "date") %>% 
   left_join(max_female, by = "date") %>% 
   left_join(female_all %>% dplyr::select(date, femaleID, rank, rs2),
             by = c("date", "subject" = "femaleID")) -> focal_raw_b

@@ -563,7 +563,7 @@ model_parameters(m_agginj2)
 ##### 結果の作図  
 **群れオス**  
 ```{r}
-nd_agginj_tm <- crossing(rate_agg_tm = seq(0,2,length.out =100),
+nd_agginj_tm <- tidyr::crossing(rate_agg_tm = seq(0,2,length.out =100),
                        rate_agg_ntm = mean(agg_injury_ntm$rate_agg_ntm),
                        study_period = c("m18","m19","m20","m21"),
                        rs2 = c(0,1))
@@ -598,7 +598,7 @@ agg_injury_ntm %>%
 
 **群れ外オス**  
 ```{r}
-nd_agginj_ntm <- crossing(rate_agg_ntm = seq(0,1,length.out =100),
+nd_agginj_ntm <- tidyr::crossing(rate_agg_ntm = seq(0,1,length.out =100),
                        rate_agg_tm = mean(agg_injury_ntm$rate_agg_tm),
                        study_period = c("m18","m19","m20","m21"),
                        rs2 = c(0,1))
@@ -755,7 +755,7 @@ estimate_slopes(m_agginj_all2,
 
 ##### 結果の作図   
 ```{r}
-nd_agginj_all <- crossing(rate_agg = seq(0,2,length.out =100),
+nd_agginj_all <- tidyr::crossing(rate_agg = seq(0,2,length.out =100),
                        study_period = c("m18","m19","m20","m21"),
                        rs2 = c(0,1))
 
