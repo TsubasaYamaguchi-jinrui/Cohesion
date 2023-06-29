@@ -1,0 +1,47 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+## 数式用  
+$$
+P(x|n,p) = _n C _x p^x(1-p)^{n-x} \quad (x \geq 0)
+$$
+
+$$
+\begin{aligned}
+N_i &\sim Betabinial(N_i, p_i, \theta)\\
+p_i &= \beta_0 + \beta_1\times 群れ外オス数 + \beta_2 \times TYの有無 + \beta_3 \times
+
+\end{aligned}
+$$
+
+## 二項分布  
+```{r}
+## xは0から10までとりうる
+x <- seq(0,20,by=1)
+
+## それぞれのxの値を取りうる確率  
+p_x <- dbinom(x, size = 20, prob = 0.6)
+
+## 作図  
+data.frame(x = x,
+           p_x = p_x) %>% 
+  ggplot(aes(x = x, y = p_x))+
+  geom_col()+
+  theme_bw(base_size = 13)+
+  theme(aspect.ratio = 1,
+        axis.title.y = element_text(angle=0,
+                                    vjust = 0.5,
+                                    family = "Yu Mincho"),
+        axis.text = element_text(family = "Times New Roman"))+
+  labs(y = "x\n頭\nが\n休\n息\n集\n団\nに\nい\nる\n確\n率")+
+  annotate(geom = "text",
+           x = 2, y = 0.15,
+           parse = T,
+          label = str_c("italic(p) ==", 0.7),
+          family = "Times New Roman",
+          size = 6) -> p_binom
+
+# ggsave("p_binom.png", p_binom, width =100, height = 100, dpi = 600, units = "mm")
+```

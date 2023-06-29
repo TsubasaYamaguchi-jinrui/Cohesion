@@ -292,7 +292,7 @@ knitr::include_graphics("figure/p_focalagg_maleID.png")
 #### 群れオスと群れ外オスの攻撃を区別しない    
 まず、群れオスと群れ外オスの攻撃を区別しないで分析を行う。  
 
-##### モデリング       
+##### モデリング1       
 モデルの詳細は以下の通り。なお、群れ外オス数と発情メス数は中心化した。60分以上追跡したデータのみを使用。      
 
 - 分布: 負の二項分布  
@@ -408,6 +408,184 @@ p_cont_rs_ntm
 # ggsave("figure/p_cont_rs_ntm.png", p_cont_rs_ntm, dpi = 600, width =100, height =100, units = "mm")
 ```
 
+##### モデリング2  
+発情メス・非発情メスを分けて、群れ外オス数と調査年の交互作用を入れる(→ VIFが高くなってしまう)。そのほかの変数は同じ。
+
+```{r}
+## 発情・非発情を分けて観察年と群れ外オス数の交互作用をいれる
+### 非発情メス
+m_aggfocal_an <- brm(no_agg ~ cen_ntm*study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum %>% filter(dur >= 60 & rs2 == "0"),
+                     file = "model/m_aggfocal_an.rds")
+
+### 発情メス
+m_aggfocal_es <- brm(no_agg ~ cen_ntm*study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum %>% filter(dur >= 60 & rs2 == "1"),
+                     file = "model/m_aggfocal_es.rds")
+```
+
+###### モデルチェック  
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_es <- dh_check_brms(m_aggfocal_es)
+check_m_aggfocal_an <- dh_check_brms(m_aggfocal_an)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_es)
+plotQQunif(check_m_aggfocal_an)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_es)  
+testZeroInflation(check_m_aggfocal_an)  
+```
+
+VIFが高くなってしまう。  
+```{r}
+check_collinearity(m_aggfocal_es)
+check_collinearity(m_aggfocal_an)
+```
+
+##### モデリング3  
+VIFが高くなった群れ外オス数と調査年の交互作用を除く。
+```{r}
+## 発情・非発情を分けて観察年と群れ外オス数の交互作用をいれる
+### 非発情メス
+m_aggfocal_an2 <- brm(no_agg ~ cen_ntm + study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum %>% filter(dur >= 60 & rs2 == "0"),
+                     file = "model/m_aggfocal_an2.rds")
+
+### 発情メス
+m_aggfocal_es2 <- brm(no_agg ~ cen_ntm + study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum %>% filter(dur >= 60 & rs2 == "1"),
+                     file = "model/m_aggfocal_es2.rds")
+```
+
+###### モデルチェック  
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_es2 <- dh_check_brms(m_aggfocal_es2)
+check_m_aggfocal_an2 <- dh_check_brms(m_aggfocal_an2)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_es2)
+plotQQunif(check_m_aggfocal_an2)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_es2)  
+testZeroInflation(check_m_aggfocal_an2)  
+```
+
+VIFの問題もなし。  
+```{r}
+check_collinearity(m_aggfocal_es2)
+check_collinearity(m_aggfocal_an2)
+```
+
+###### 結果の確認  
+**非発情メス**  
+調査期間と群れ外オス数が有意な影響。
+```{r}
+model_parameters(m_aggfocal_an2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggfocal_an
+
+table_aggfocal_an  
+
+# save_as_image(table_aggfocal_an, "table/table_aggfocal_an.png")
+```
+<br/>  
+
+**発情メス**   
+調査期間と群れ外オス数が有意な影響。
+```{r}
+model_parameters(m_aggfocal_es2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggfocal_es
+
+table_aggfocal_es 
+
+# save_as_image(table_aggfocal_es, "table/table_aggfocal_es.png")
+```
+<br/>  
+
 
 #### 群れオス・群れ外オスを区別  
 続いて、群れオスと群れ外オスの攻撃を区別して分析する。  
@@ -420,7 +598,7 @@ p_cont_rs_ntm
 - ランダム切片: 追跡個体ID  
 
 ##### 群れオスからの攻撃頻度  
-###### モデリング        
+###### モデリング1        
 まず、群れオスの攻撃についてモデリングする。  
 ```{r}
 m_aggfocal_tm <- brm(agg_tm ~ cen_ntm*rs2 + TY + study_period + offset(logdur) + (1|subject),
@@ -593,6 +771,184 @@ focal_sum_ntm_b %>%
 ```{r fig-aggfocal-tm, echo=FALSE, out.width="100%", fig.cap="群れ外オス数ごとの群れオスからの被攻撃頻度"}
 knitr::include_graphics("figure/p_aggfocal_tm.png")
 ```
+
+###### モデリング2  
+発情メス・非発情メスを分けて、群れ外オス数と調査年の交互作用を入れる(→ VIFが高くなってしまう)。そのほかの変数は同じ。
+
+```{r}
+## 発情・非発情を分けて観察年と群れ外オス数の交互作用をいれる
+### 非発情メス
+m_aggfocal_tm_an <- brm(agg_tm ~ cen_ntm*study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum %>% filter(dur >= 60 & rs2 == "0"),
+                     file = "model/m_aggfocal_tm_an.rds")
+
+### 発情メス
+m_aggfocal_tm_es <- brm(agg_tm ~ cen_ntm*study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum %>% filter(dur >= 60 & rs2 == "1"),
+                     file = "model/m_aggfocal_tm_es.rds")
+```
+
+**モデルチェック**  
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm_es <- dh_check_brms(m_aggfocal_tm_es)
+check_m_aggfocal_tm_an <- dh_check_brms(m_aggfocal_tm_an)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm_es)
+plotQQunif(check_m_aggfocal_tm_an)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm_es)  
+testZeroInflation(check_m_aggfocal_tm_an)  
+```
+
+VIFが高くなってしまう。  
+```{r}
+check_collinearity(m_aggfocal_tm_es)
+check_collinearity(m_aggfocal_tm_an)
+```
+
+###### モデリング3  
+そこで、VIFが高くなった群れ外オス数と調査年の交互作用を除く。
+```{r}
+##　非発情メス
+m_aggfocal_tm_an2 <- brm(agg_tm ~ cen_ntm + study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm %>% filter(dur >= 60 & rs2 == "0"),
+                     file = "model/m_aggfocal_tm_an2.rds")
+
+### 発情メス
+m_aggfocal_tm_es2 <- brm(agg_tm ~ cen_ntm + study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm %>% filter(dur >= 60 & rs2 == "1"),
+                     file = "model/m_aggfocal_tm_es2.rds")
+```
+
+**モデルチェック**    
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_tm_es2 <- dh_check_brms(m_aggfocal_tm_es2)
+check_m_aggfocal_tm_an2 <- dh_check_brms(m_aggfocal_tm_an2)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_tm_es2)
+plotQQunif(check_m_aggfocal_tm_an2)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_tm_es2)  
+testZeroInflation(check_m_aggfocal_tm_an2)  
+```
+
+VIFの問題もなし。  
+```{r}
+check_collinearity(m_aggfocal_tm_es2)
+check_collinearity(m_aggfocal_tm_an2)
+```
+
+**結果の確認**  
+
+**非発情メス**  
+調査期間のみが有意な影響。
+```{r}
+model_parameters(m_aggfocal_tm_an2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggfocal_tm_an
+
+table_aggfocal_tm_an  
+
+# save_as_image(table_aggfocal_tm_an, "table/table_aggfocal_tm_an.png")
+```
+<br/>  
+
+**発情メス**   
+有意な変数はなし。  
+```{r}
+model_parameters(m_aggfocal_tm_es2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggfocal_tm_es
+
+table_aggfocal_tm_es
+
+# save_as_image(table_aggfocal_tm_es2, "table/table_aggfocal_tm_es.png")
+```
+<br/>  
 
 
 ##### 群れ外オスからの攻撃頻度  
@@ -774,6 +1130,184 @@ focal_sum_ntm_b %>%
 ```{r fig-aggfocal-ntm, echo=FALSE, out.width="100%", fig.cap="群れ外オス数ごとの群れ外オスからの被攻撃頻度"}
 knitr::include_graphics("figure/p_aggfocal_ntm.png")
 ```
+
+###### モデリング2  
+発情メス・非発情メスを分けて、群れ外オス数と調査年の交互作用を入れる(→ VIFが高くなってしまう)。そのほかの変数は同じ。
+
+```{r}
+### 非発情メス
+m_aggfocal_ntm_an <- brm(agg_ntm ~ cen_ntm*study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm %>% filter(dur >= 60 & rs2 == "0"),
+                     file = "model/m_aggfocal_ntm_an.rds")
+
+### 発情メス
+m_aggfocal_ntm_es <- brm(agg_ntm ~ cen_ntm*study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm %>% filter(dur >= 60 & rs2 == "1"),
+                     file = "model/m_aggfocal_ntm_es.rds")
+```
+
+**モデルチェック**  
+
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_ntm_es <- dh_check_brms(m_aggfocal_ntm_es)
+check_m_aggfocal_ntm_an <- dh_check_brms(m_aggfocal_ntm_an)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_ntm_es)
+plotQQunif(check_m_aggfocal_ntm_an)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_ntm_es)  
+testZeroInflation(check_m_aggfocal_ntm_an)  
+```
+
+VIFが高くなってしまう。  
+```{r}
+check_collinearity(m_aggfocal_ntm_es)
+check_collinearity(m_aggfocal_ntm_an)
+```
+
+###### モデリング3  
+そこで、VIFが高くなった群れ外オス数と調査年の交互作用を除く。
+```{r}
+##　非発情メス
+m_aggfocal_ntm_an2 <- brm(agg_ntm ~ cen_ntm + study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm %>% filter(dur >= 60 & rs2 == "0"),
+                     file = "model/m_aggfocal_ntm_an2.rds")
+
+### 発情メス
+m_aggfocal_ntm_es2 <- brm(agg_ntm ~ cen_ntm + study_period + TY +  offset(logdur) + (1|subject),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_sum_ntm %>% filter(dur >= 60 & rs2 == "1"),
+                     file = "model/m_aggfocal_ntm_es2.rds")
+```
+
+**モデルチェック**    
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_ntm_es2 <- dh_check_brms(m_aggfocal_ntm_es2)
+check_m_aggfocal_ntm_an2 <- dh_check_brms(m_aggfocal_ntm_an2)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_ntm_es2)
+plotQQunif(check_m_aggfocal_ntm_an2)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_ntm_es2)  
+testZeroInflation(check_m_aggfocal_ntm_an2)  
+```
+
+VIFの問題もなし。  
+```{r}
+check_collinearity(m_aggfocal_ntm_es2)
+check_collinearity(m_aggfocal_ntm_an2)
+```
+
+**結果の確認**  
+
+**非発情メス**  
+調査期間と群れ外オス数が有意な影響。
+```{r}
+model_parameters(m_aggfocal_ntm_an2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggfocal_ntm_an
+
+table_aggfocal_ntm_an  
+
+# save_as_image(table_aggfocal_ntm_an, "table/table_aggfocal_ntm_an.png")
+```
+<br/>  
+
+**発情メス**   
+有意な変数はなし。  
+```{r}
+model_parameters(m_aggfocal_ntm_es2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggfocal_ntm_es
+
+table_aggfocal_ntm_es 
+
+# save_as_image(table_aggfocal_es, "table/table_aggfocal_es.png")
+```
+<br/>  
 
 ## 全生起サンプリングを用いた分析  
 続いて、全生起サンプリングのデータを用いて同様の分析を行う。  
@@ -1048,7 +1582,7 @@ knitr::include_graphics("figure/p_aggao_maleID.png")
 #### 群れオスと群れ外オスを区別しない  
 それでは分析を行う。まず、群れオスと群れ外オスの攻撃を区別しないで分析を行う。  
 
-##### モデリング    
+##### モデリング1    
 モデルの詳細は以下の通り。なお、群れ外オス数は中心化した。    
 
 - 分布: 負の二項分布  
@@ -1129,7 +1663,25 @@ table_agg_ao
 ```{r}
 estimate_slopes(m_aggao,
                trend = "cen_ntm",
-               at = "rs2 = c(0,1)")
+               at = "rs2 = c(0,1)") %>% 
+  data.frame() %>% 
+  select(1:4) %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Coefficient = sprintf("%.2f",Coefficient)) %>% 
+  select(1,2,5) %>% 
+  mutate(rs2 = str_replace_all(rs2, c("0" = "なし", "1" = "あり"))) %>% 
+  rename("発情の有無" =1, "群れ外オスの効果の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  align(j=1, part = "all",align = "left") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)
 ```
 <br/>  
 
@@ -1163,6 +1715,174 @@ p_cont_ao_rs_ntm
 
 # ggsave("figure/p_cont_ao_rs_ntm.png", p_cont_ao_rs_ntm, dpi = 600, width =100, height =100, units = "mm")
 ```
+
+##### モデリング2  
+発情メス・非発情メスを分けて、群れ外オス数と調査年の交互作用を入れる(→ VIFが高くなってしまう)。そのほかの変数は同じ。
+
+```{r}
+### 非発情メス
+m_aggao_an <- brm(no_agg ~ cen_ntm*study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "0"),
+                     file = "model/m_aggao_an.rds")
+
+### 発情メス
+m_aggao_es <- brm(no_agg ~ cen_ntm*study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "1"),
+                     file = "model/m_aggao_es.rds")
+```
+
+###### モデルチェック  
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggao_es <- dh_check_brms(m_aggao_es)
+check_m_aggao_an <- dh_check_brms(m_aggao_an)
+```
+
+```{r}
+plotQQunif(check_m_aggao_es)
+plotQQunif(check_m_aggao_an)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_es)  
+testZeroInflation(check_m_aggao_an)  
+```
+
+発情メスについてはVIFが10よりも高くなってしまう。  
+```{r}
+check_collinearity(m_aggao_es)
+check_collinearity(m_aggao_an)
+```
+
+##### モデリング3  
+そこで、発情メスについてはVIFが高くなった群れ外オス数と調査年の交互作用を除く。
+```{r}
+### 発情メス
+m_aggao_es2 <- brm(no_agg ~ cen_ntm + study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "1"),
+                     file = "model/m_aggao_es2.rds")
+```
+
+###### モデルチェック  
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggfocal_es2 <- dh_check_brms(m_aggfocal_es2)
+```
+
+```{r}
+plotQQunif(check_m_aggfocal_es2)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggfocal_es2)  
+```
+
+VIFの問題もなし。  
+```{r}
+check_collinearity(m_aggfocal_es2)
+```
+
+###### 結果の確認  
+**非発情メス**  
+調査期間と群れ外オス数、調査期間(2021)と群れ外オス数の交互作用が有意な影響。
+```{r}
+model_parameters(m_aggao_an) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.7) %>% 
+  width(j = 2, width = 1.5)-> table_aggao_an
+
+table_aggao_an  
+
+# save_as_image(table_aggao_an, "table/table_aggao_an.png")
+```
+<br/>  
+
+交互作用項を含めて検討する。いずれの年も群れ外オス数は有意に被攻撃頻度と正に関連。    
+```{r}
+estimate_slopes(m_aggao_an,
+                trend = "cen_ntm",
+                at = "study_period")
+```
+
+
+**発情メス**   
+調査期間とTYの在/不在が有意な影響。
+```{r}
+model_parameters(m_aggao_es2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggao_es
+
+table_aggao_es 
+
+# save_as_image(table_aggao_es, "table/table_aggao_es.png")
+```
+<br/>  
+
 
 #### 群れオス・群れ外オスを区別する    
 続いて、群れオスと群れ外オスの攻撃を区別して分析する。  
@@ -1352,6 +2072,146 @@ agg_ao_all_fin %>%
 knitr::include_graphics("figure/p_aggao_tm.png")
 ```
 
+###### モデリング2  
+発情メス・非発情メスを分けて、群れ外オス数と調査年の交互作用を入れる(→ VIFが高くなってしまう)。そのほかの変数は同じ。
+
+```{r}
+## 発情・非発情を分けて観察年と群れ外オス数の交互作用をいれる
+### 非発情メス
+m_aggao_tm_an <- brm(agg_tm ~ cen_ntm*study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "0"),
+                     file = "model/m_aggao_tm_an.rds")
+
+### 発情メス
+m_aggao_tm_es <- brm(agg_tm ~ cen_ntm*study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "1"),
+                     file = "model/m_aggao_tm_es.rds")
+```
+
+**モデルチェック**    
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggao_tm_es <- dh_check_brms(m_aggao_tm_es)
+check_m_aggao_tm_an <- dh_check_brms(m_aggao_tm_an)
+```
+
+```{r}
+plotQQunif(check_m_aggao_tm_es)
+plotQQunif(check_m_aggao_tm_an)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_tm_es)  
+testZeroInflation(check_m_aggao_tm_an)  
+```
+
+VIFは高いが、10よりは低くなっている。  
+```{r}
+check_collinearity(m_aggao_tm_es)
+check_collinearity(m_aggao_tm_an)
+```
+
+**結果の確認**  
+
+**非発情メス**  
+調査期間と群れ外オス数、調査期間(2020年・2021年)と群れ外オス数の交互作用が有意な影響。
+```{r}
+model_parameters(m_aggao_tm_an) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.7) %>% 
+  width(j = 2, width = 1.5)-> table_aggao_tm_an
+
+table_aggao_tm_an  
+
+# save_as_image(table_aggao_tm_an, "table/table_aggao_tm_an.png")
+```
+<br/>  
+
+交互作用項を含めて検討する。2019年のみ群れ外オス数は有意に被攻撃頻度と正に関連。    
+```{r}
+estimate_slopes(m_aggao_tm_an,
+                trend = "cen_ntm",
+                at = "study_period")
+```
+
+
+**発情メス**   
+調査期間と群れ外オス数、調査期間(2021年)と群れ外オス数の交互作用が有意な影響。
+```{r}
+model_parameters(m_aggao_tm_es) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.7) %>% 
+  width(j = 2, width = 1.5)-> table_aggao_tm_es
+
+table_aggao_tm_es 
+
+# save_as_image(table_aggao_tm_es, "table/table_aggao_tm_es.png")
+```
+<br/>  
+
+交互作用項を含めて検討する。2019年と2021年は群れ外オス数は有意に被攻撃頻度と正に関連。    
+```{r}
+estimate_slopes(m_aggao_tm_es,
+                trend = "cen_ntm",
+                at = "study_period")
+```
+
+
 ##### 群れ外オスからの攻撃頻度  
 ###### モデリング    
 まず、群れオスの攻撃についてモデリングする。  
@@ -1418,12 +2278,12 @@ model_parameters(m_aggao_ntm)%>%
 
 table_aggao_ntm
 
- save_as_image(table_aggao_ntm, "table/table_aggao_ntm.png")
+# save_as_image(table_aggao_ntm, "table/table_aggao_ntm.png")
 ```
 <br/>  
 
 
-交互作用項のある変数の検討を行う。群れ外オス数は非発情メス・発情メス療法でのみで被攻撃頻度に有意に影響していた。  
+交互作用項のある変数の検討を行う。群れ外オス数は非発情メス・発情メス両方で被攻撃頻度に有意に影響していた。  
 ```{r}
 estimate_slopes(m_aggao_ntm,
                trend = "cen_ntm",
@@ -1527,4 +2387,157 @@ agg_ao_all_fin %>%
 ```{r fig-aggao-ntm, echo=FALSE, out.width="100%", fig.cap="群れ外オス数ごとの群れ外オスからの被攻撃頻度"}
 knitr::include_graphics("figure/p_aggao_ntm.png")
 ```
+
+###### モデリング2  
+発情メス・非発情メスを分けて、群れ外オス数と調査年の交互作用を入れる(→ VIFが高くなってしまう)。そのほかの変数は同じ。
+
+```{r}
+## 発情・非発情を分けて観察年と群れ外オス数の交互作用をいれる
+### 非発情メス
+m_aggao_ntm_an <- brm(agg_ntm ~ cen_ntm*study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "0"),
+                     file = "model/m_aggao_ntm_an.rds")
+
+### 発情メス
+m_aggao_ntm_es <- brm(agg_ntm ~ cen_ntm*study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "1"),
+                     file = "model/m_aggao_ntm_es.rds")
+```
+
+###### モデリング3  
+そこで、発情メスについてはVIFが高くなった群れ外オス数と調査年の交互作用を除く。
+```{r}
+## 非発情メス
+m_aggao_ntm_an2 <- brm(agg_ntm ~ cen_ntm + study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "0"),
+                     file = "model/m_aggao_ntm_an2.rds")
+### 発情メス
+m_aggao_ntm_es2<- brm(agg_ntm ~ cen_ntm + study_period + TY + offset(logdur) + (1|femaleID) + (1|date),
+                     family = negbinomial,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,5), class = "b"),
+                           prior(student_t(4,0,10), class = "Intercept"),
+                           prior(student_t(4,0,10), class = "sd"),
+                           prior(gamma(0.01,0.01), class = "shape")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = agg_ao_all_fin %>% mutate(date = as.factor(date)) %>% filter(rs2 == "1"),
+                     file = "model/m_aggao_ntm_es2.rds")
+```
+
+**モデルチェック**    
+いずれのモデルも分布から大きく外れていることはなく、過分散や外れ値の問題もないよう。  
+```{r, include = FALSE}
+check_m_aggao_ntm_es2 <- dh_check_brms(m_aggao_ntm_es2)
+check_m_aggao_ntm_an2 <- dh_check_brms(m_aggao_ntm_an2)
+```
+
+```{r}
+plotQQunif(check_m_aggao_ntm_es2)
+plotQQunif(check_m_aggao_ntm_an2)
+```
+
+ゼロ過剰の問題もない。  
+```{r}
+testZeroInflation(check_m_aggao_ntm_es2)  
+testZeroInflation(check_m_aggao_ntm_an2)  
+```
+
+どちらもVIFが10より高くなってしまう。   
+```{r}
+check_collinearity(m_aggao_ntm_es2)
+check_collinearity(m_aggao_ntm_an2)
+```
+
+**結果の確認**  
+
+**非発情メス**  
+調査期間と群れ外オス数が有意な影響。
+```{r}
+model_parameters(m_aggao_ntm_an2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggao_ntm_an
+
+table_aggao_ntm_an  
+
+# save_as_image(table_aggao_ntm_an, "table/table_aggao_ntm_an.png")
+```
+<br/>  
+
+**発情メス**  
+調査期間のみが有意な影響。
+```{r}
+model_parameters(m_aggao_ntm_es2) %>% 
+  data.frame() %>% 
+  select(c(1,3,5,6)) %>%   
+  filter(Parameter != "shape") %>% 
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","cen_ntm" = "群れ外オス数","rs2" = "発情有(vs 無)",
+                                              "TY" = "TY(在 vs 不在)", "study_periodm20" = "2020年(vs 2019年)",
+                                              "study_periodm21" = "2021年(vs 2019年)", "cen_ntm:rs2" = "群れ外オス数×発情の有無",
+                                              ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5)-> table_aggao_ntm_es
+
+table_aggao_ntm_es
+
+# save_as_image(table_aggao_ntm_es, "table/table_aggao_ntm_es.png")
+```
+<br/>  
 
