@@ -610,7 +610,7 @@ agg_injury_ntm %>%
             size = 0.7)+
   theme_bw(base_size = 14)+
   scale_y_continuous(breaks = seq(0,1,by = 0.2)) +
-  labs(x = "群れオスからの攻撃頻度", y = "怪\n我\n日\n数\n割\n合\n(回/日)",
+  labs(x = "群れオスからの攻撃頻度", y = "新\nた\nに\n怪\n我\nを\nす\nる\n確\n率",
        color = "調査期間", linetype = "発情の有無") +
   scale_color_nejm()+
   theme(axis.title.y = element_text(angle = 0,
@@ -645,7 +645,7 @@ agg_injury_ntm %>%
             size = 0.7)+
   theme_bw(base_size = 14)+
   scale_y_continuous(breaks = seq(0,1,by = 0.2)) +
-  labs(x = "群れ外オスからの攻撃頻度", y = "怪\n我\n日\n数\n割\n合\n(回/日)",
+  labs(x = "群れ外オスからの攻撃頻度", y = "新\nた\nに\n怪\n我\nを\nす\nる\n確\n率",
        color = "調査期間", linetype = "発情の有無") +
   scale_color_nejm()+
   coord_cartesian(xlim = c(0,1.02))+
@@ -829,7 +829,7 @@ agg_injury_all %>%
             linewidth = 0.7)+
   theme_bw(base_size = 14)+
   scale_y_continuous(breaks = seq(0,1,by = 0.2)) +
-  labs(x = "オスからの攻撃頻度", y = "怪\n我\n日\n数\n割\n合\n(回/日)",
+  labs(x = "オスからの攻撃頻度", y = "新\nた\nに\n怪\n我\nを\nす\nる\n確\n率",
        color = "調査期間", linetype = "発情の有無") +
   scale_color_nejm()+
   theme(axis.title.y = element_text(angle = 0,

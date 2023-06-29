@@ -893,7 +893,6 @@ RGmember %>%
   left_join(RGmember, by = c("date","no_focal","subject","time","ID")) %>% 
   mutate(presence = ifelse(subject == ID, 1,presence)) %>% 
   replace_na(list(presence = 0)) %>% 
-  mutate(N = str_c(no_focal,"-",time)) %>% 
   pivot_wider(names_from = ID, values_from = presence) %>% 
   left_join(focal_raw_fin %>% select(no_focal,time, subject,rs2,TY,IT) %>% rename(TYpre = TY, ITpre = IT),
             by = c("no_focal","subject","time")) %>% 

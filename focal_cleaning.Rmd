@@ -8,7 +8,7 @@
 focal_raw18 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2018mating/2018mating_raw.xlsx",
                       sheet = "focal_raw",
                       col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2),"numeric","text",
-                                    rep("numeric",3),rep("text",9),rep("numeric",2),rep("text",6),rep("numeric",5),rep("text",2))) %>% 
+                                    rep("numeric",3),rep("text",9),rep("numeric",2),rep("text",6),rep("numeric",6),rep("text",2))) %>% 
   mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
   mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
 
@@ -16,7 +16,7 @@ focal_raw18 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2018mat
 focal_raw19 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019mating/2019mating_raw.xlsx",
                       sheet = "focal_raw",
                       col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2),"numeric","text",
-                                    rep("numeric",3),rep("text",9),rep("numeric",2),rep("text",6),rep("numeric",5),rep("text",2))) %>% 
+                                    rep("numeric",3),rep("text",9),rep("numeric",2),rep("text",6),rep("numeric",6),rep("text",2))) %>% 
   mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
   mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
 
@@ -24,7 +24,7 @@ focal_raw19 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/data/2019mat
 focal_raw20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2020mating/2020mating_raw.xlsx",
                       sheet = "focal_raw",
                       col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2), "numeric","text",
-                                    rep("numeric",3),rep("text",21),rep("numeric",2),rep("text",4),rep("numeric",4),"text","numeric","text")) %>% 
+                                    rep("numeric",3),rep("text",21),rep("numeric",2),rep("text",4),rep("numeric",5),"text","numeric","text")) %>% 
   mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
   mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
 
@@ -33,7 +33,7 @@ focal_raw20 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/
 focal_raw21 <- read_excel("C:/Users/Tsubasa Yamaguchi/Desktop/Study/DoctorStudy/data/2021mating/2021mating_raw.xlsx",
                       sheet = "focal_raw",
                       col_types = c(rep("numeric",2),rep("date",3),rep("text",1),rep("numeric",2), rep("text",2), "numeric","text",
-                                    rep("numeric",3), rep("text",21),rep("numeric",2),rep("text",4),rep("numeric",4),"text","numeric","text")) %>% 
+                                    rep("numeric",3), rep("text",21),rep("numeric",2),rep("text",4),rep("numeric",5),"text","numeric","text")) %>% 
   mutate(start_time = as_datetime(str_c(date," ", format(as.POSIXct(start_time), format = "%H:%M:%S")))) %>% 
   mutate(fin_time = as_datetime(str_c(date," ", format(as.POSIXct(fin_time), format = "%H:%M:%S")))) 
 

@@ -2,9 +2,270 @@
 以下では、群れの凝集性によってオスから攻撃される頻度がどのように変わるかを検討する。  
 個体追跡中のオスの攻撃は事例数自体が少ないため、基本的には地上にいた全ポイントを使用する。  
 
-## 休息集団サイズと被攻撃頻度の関連  
-
+## 休息集団サイズと被攻撃頻度の関連    
+### データの加工  
+ハドリング中、低順位または群れ外オスとコンソートしているメスは除外。  
 ```{r}
-
+focal_raw_prox_fin %>% 
+  replace_na(list(hud = 0)) %>% 
+  filter(hud != "1") %>% 
+  filter(RG == "1") %>% 
+  filter(consort <= 2) %>% 
+  filter(TY != "2") %>% 
+  mutate(cen_ntm = no_ntm - mean(no_ntm, na.rm = TRUE),
+         cen_est = no_est - mean(no_est, na.rm = TRUE)) %>% 
+  mutate(N = 1:n()) %>% 
+  mutate(RGfemale_plus1 = RGfemale + 1) -> focal_rest_b
 ```
 
+### モデリング1  
+それでは、モデリングを行う。モデルの詳細は以下の通り。  
+
+- 分布: ベルヌーイ分布    
+- リンク関数: ロジット関数    
+- 応答変数: 攻撃されたか否か(`agg_focal`)           
+- 説明変数: 休息集団内のメス数(自身を含む)、休息集団内のTY、KRの有無、その日TYが群れにいるか、発情の有無、その日の群れ外オス数、その日の発情メス数     
+- ランダム切片: メスID(`subject`)、フォーカルセッション番号(`no_focal`)     
+
+```{r}
+m_agg_RGsize <- brm(agg_focal ~ RGfemale_plus1 + RG_TY + RG_KR + no_ntm + no_est + TY + rs2 +  (1|subject) + (1|no_focal),
+                     family = bernoulli,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,10), class = "b"),
+                               prior(student_t(4,0,10), class = "Intercept"),
+                               prior(student_t(4,0,10), class = "sd")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_rest_b,
+                     file = "model/m_agg_RGsize.rds")
+```
+
+### モデルチェック  
+過分散などの問題はないよう。  
+```{r, include = FALSE}
+check_agg_RGsize <- dh_check_brms(m_agg_RGsize)
+```
+
+```{r, fig.dim = c(4.5,4.5)}
+plotQQunif(m_agg_RGsize)
+```
+
+多重共線性の問題はない。  
+```{r}
+check_collinearity(m_agg_RGsize)
+```
+
+### 結果の確認   
+休息集団サイズが有意な影響。休息集団サイズが大きいほど被攻撃回数は減少した。  
+```{r}
+model_parameters(m_agg_RGsize) %>% 
+  data.frame() %>% 
+  select(c(1,2,4,5)) %>%   
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","no_ntm" = "観察日の群れ外オス数","rs2" = "追跡個体の発情(有 vs 無)",
+                                                  "RGfemale_plus1" = "休息集団内のメス数", "RG_TY" = "休息集団内のTY(有 vs 無)",
+                                                  "no_est" = "観察日の発情メス数",
+                                                  "RG_KR"= "休息集団内のKR(有 vs 無)", "^TY" = "観察日のTY(在 vs 不在)"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.7) %>% 
+  width(j = 2, width = 1.5) -> table_agg_RGsize
+
+table_agg_RGsize
+
+# save_as_image(table_agg_RGsize, "table/table_agg_Rsize.png")
+```
+<br/> 
+
+### モデリング2  
+TYとKRが休息集団にいるかと休息集団内のメス数の交互作用を入れたモデルも考える。休息集団内のメス数は中心化する。    
+
+```{r}  
+focal_rest_b %>% 
+  filter(study_period != "m18") %>% 
+  mutate(cen_RGfemale = RGfemale_plus1 - mean(RGfemale_plus1, na.rm = TRUE),
+         cen_x3mfemale = x3m_female - mean(x3m_female, na.rm = TRUE)) -> focal_rest_c
+
+m_agg_RGsize2 <- brm(agg_focal ~ RGfemale_plus1*RG_TY + RGfemale_plus1*RG_KR + no_ntm + no_est + rs2 + TY + (1|subject) + (1|no_focal),
+                     family = bernoulli,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,10), class = "b"),
+                               prior(student_t(4,0,10), class = "Intercept"),
+                               prior(student_t(4,0,10), class = "sd")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_rest_c,
+                     file = "model/m_agg_RGsize2.rds")
+```
+
+### モデルチェック  
+過分散などの問題はないよう。
+```{r, include = FALSE}
+check_agg_RGsize2 <- dh_check_brms(m_agg_RGsize2)
+```
+
+```{r, fig.dim = c(4.5,4.5)}
+plotQQunif(m_agg_RGsize2)
+```
+
+VIFはやや高いものの、10以下だった。多重共線性の問題はない。  
+```{r}
+check_collinearity(m_agg_RGsize2)
+```
+
+### 結果の確認   
+休息集団サイズが有意な影響。休息集団サイズが大きいほど被攻撃回数は減少した。また、KRの有無と休息集団サイズの交互作用も有意。    
+```{r}
+model_parameters(m_agg_RGsize2) %>% 
+  data.frame() %>% 
+  select(c(1,2,4,5)) %>%   
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","no_ntm" = "観察日の群れ外オス数","rs2" = "追跡個体の発情(有 vs 無)",
+                                                  "RGfemale_plus1" = "休息集団内のメス数", "RG_TY" = "休息集団内のTY(有 vs 無)",
+                                                  "no_est" = "観察日の発情メス数",
+                                                  "RG_KR"= "休息集団内のKR(有 vs 無)", "^TY" = "観察日のTY(在 vs 不在)",
+                                                  ":" = "×"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.7) %>% 
+  width(j = 2, width = 1.5) -> table_agg_RGsize2
+
+table_agg_RGsize2
+
+# save_as_image(table_agg_RGsize2, "table/table_agg_RGsize2.png")
+```
+<br/> 
+
+TYの有無と休息集団サイズの交互作用は有意な傾向(90%CIは含まない)。  
+```{r}
+model_parameters(m_agg_RGsize2, ci = 0.9)  
+```
+
+
+交互作用のある変数を検討する。  
+
+TYやKRの有無にかかわらず、休息集団内のメス数が多いと被攻撃頻度は減少した。ただし、休息集団内にKRのみがいるとその傾向は有意ではなくなった。TYがいると休息集団内のメス数の効果はさらに強くなるよう？  
+```{r}
+estimate_slopes(m_agg_RGsize2,
+                trend = "RGfemale_plus1",
+                at = c("RG_TY = c(0,1)","RG_KR = c(0,1)"))
+```
+
+
+RG内のTYの有無による被攻撃頻度の違いは、有意にはならないよう。推定値の幅が大きすぎる。    
+```{r}
+estimate_contrasts(m_agg_RGsize2,
+                   contrast = c("RG_TY = c(0,1)"),
+                   at = "RGfemale_plus1",
+                   length = 20)
+```
+
+
+## 近接個体数と被攻撃頻度の関連    
+続いて、休息中に3m以内に近接しているメスの数と攻撃の有無の関連を見る。  
+
+### モデリング1    
+それでは、モデリングを行う。モデルの詳細は以下の通り。  
+
+- 分布: ベルヌーイ分布    
+- リンク関数: ロジット関数    
+- 応答変数: 攻撃されたか否か(`agg_focal`)           
+- 説明変数: 3m以内のメス数(自身を含む)、TY、KRが3m以内にいるか、その日TYが群れにいるか、発情の有無、その日の群れ外オス数、その日の発情メス数     
+- ランダム切片: メスID(`subject`)、フォーカルセッション番号(`no_focal`)     
+
+```{r}
+m_agg_prox <- brm(agg_focal ~ x3m_female + TY_3m + KR_3m + no_ntm + no_est + TY + rs2 +  (1|subject) + (1|no_focal),
+                     family = bernoulli,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,10), class = "b"),
+                               prior(student_t(4,0,10), class = "Intercept"),
+                               prior(student_t(4,0,10), class = "sd")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_rest_b,
+                     file = "model/m_agg_prox.rds")
+```
+
+#### モデルチェック  
+過分散などの問題はないよう。  
+```{r, include = FALSE}
+check_agg_prox <- dh_check_brms(m_agg_prox)
+```
+
+```{r, fig.dim = c(4.5,4.5)}
+plotQQunif(check_agg_prox)
+```
+
+多重共線性の問題はない。  
+```{r}
+check_collinearity(m_agg_prox)
+```
+
+#### 結果の確認   
+休息集団サイズが有意な影響。休息集団サイズが大きいほど被攻撃回数は減少した。  
+```{r}
+model_parameters(m_agg_prox) %>% 
+  data.frame() %>% 
+  select(c(1,2,4,5)) %>%  
+  mutate("95%CI" = str_c("[",sprintf("%.2f",CI_low),",",sprintf("%.2f",CI_high),"]")) %>% 
+  mutate(Median = sprintf("%.2f",Median)) %>% 
+  select(1,2,5) %>% 
+  mutate(Parameter = str_replace(Parameter,"b_","")) %>% 
+  mutate(Parameter = str_replace_all(Parameter, c("Intercept" = "切片","no_ntm" = "観察日の群れ外オス数","rs2" = "発情(有 vs 無)",
+                                                  "x3m_female" = "3m以内のメス数", "TY_3m" = "3m以内のTY(有 vs 無)",
+                                                  "KR_3m"= "3m以内のKR(有 vs 無)", "^TY" = "観察日のTY(在 vs 不在)",
+                                                  "no_est" = "観察日の発情メス数"))) %>% 
+  rename("説明変数" =1, "係数の推定値" = 2) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  colformat_double(digits=2) %>% 
+  set_table_properties(layout="autofit",width = 1) %>% 
+  align(j=2:3,part = "all",align = "center") %>% 
+  font(part = "header", fontname = "Yu Mincho") %>% 
+  font(part = "body", j=2:3, fontname = "Times New Roman") %>% 
+  font(part = "body", j=1, fontname = "Yu Mincho") %>% 
+  width(j=c(1), width = 2.3) %>% 
+  width(j = 2, width = 1.5) -> table_agg_prox
+
+
+table_agg_prox
+
+# save_as_image(table_agg_prox, "table/table_agg_prox.png")
+```
+<br/>   
+
+### モデリング2  
+休息集団サイズのときと同様に、3m以内にTYとKRがいたかと3m以内のメス数の交互作用も含めてモデリングする。3m以内のメス数は中心化を施した。
+
+```{r}
+m_agg_prox2 <- brm(agg_focal ~ cen_x3mfemale*TY_3m + cen_x3mfemale*KR_3m + no_ntm + no_est + TY + rs2 +  (1|subject) + (1|no_focal),
+                     family = bernoulli,
+                     iter = 5000, warmup = 2500, seed = 13,
+                     prior = c(prior(student_t(4,0,10), class = "b"),
+                               prior(student_t(4,0,10), class = "Intercept"),
+                               prior(student_t(4,0,10), class = "sd")),
+                     control=list(adapt_delta = 0.9999, max_treedepth = 20),
+                     backend = "cmdstanr",
+                     data = focal_rest_b,
+                     file = "model/m_agg_prox2.rds")
+```
